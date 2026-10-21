@@ -70,6 +70,13 @@ f = actions.compute({"found_mode": {"on": True}}, S, M, pool, now=now)
 assert f["followups"] == [] and f["new"] == [] and [x["id"] for x in f["replies"]] == ["b"] and len(f["viewings"]) == 1
 assert actions.digest_text({"replies": [], "viewings": [], "followups": [], "new": []}, {}) is None
 
+# ---- search: phone in any spelling, email, accents
+import search
+docs = {"a": [("phone", "+32 473 79 65 52"), ("description", "Contact Éric: Kemal@YesProperties.be, salle d'eau équipée, frigo")], "b": [("your note", "called 02 555 01 04, voicemail")]}
+assert list(search.run("0473/79.65.52", docs)) == ["a"] and list(search.run("0032473796552", docs)) == ["a"] and list(search.run("473796552", docs)) == ["a"]
+assert list(search.run("02 555 01 04", docs)) == ["b"] and search.run("kemal@yesproperties.be", docs)["a"][0][0] == "description"
+assert "équipée" in search.run("equipee frigo", docs)["a"][0][1] and search.run("zzzz", docs) == {} and search.run("ab", docs) == {}
+
 # ---- the demo builds a page that contains the demo listings and no personal data
 r = subprocess.run([sys.executable, os.path.join(HERE, "demo.py"), "--build-only"], capture_output=True, text=True)
 page = open(os.path.join(HERE, "demo_site", "listings.html"), encoding="utf-8").read()

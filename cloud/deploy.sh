@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")"
 [ -n "$1" ] && [ -n "$2" ] || { echo "usage: ./deploy.sh <projectId> <serviceName>"; exit 1; }
-cp ../describe.py ./describe.py
+cp ../describe.py ../search.py ./
 rm -rf logos && mkdir logos
 cp ../data/logos/* logos/ 2>/dev/null || echo "(no data/logos folder: the shared copy will show letter badges instead of site logos)"
 railway up --ci --no-gitignore -p "$1" -s "$2" -e production

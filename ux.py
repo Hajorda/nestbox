@@ -8,6 +8,8 @@ HTML = '<div id="nextview"><h2>▶ What to do now <span class="sub" id="nextSum"
 CSS = r"""
 /* toast with an action */
 #toast{display:flex;gap:10px;align-items:center}#toast.on{pointer-events:auto}#toast button{background:transparent;color:var(--bg);border:1px solid currentColor;border-radius:6px;padding:1px 10px;font-weight:700;cursor:pointer}
+.hitnote{font-size:12.5px;margin-top:3px;color:var(--okfg);background:var(--ok);border-radius:6px;padding:3px 8px}.hitnote b{font-weight:700}
+#gsearch{margin-left:8px;width:230px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}
 .why{font-size:12.5px;margin-top:2px;color:var(--mut)}.why b.ok{color:var(--goodfg)}.why b.no{color:var(--badfg)}.why .chk{color:var(--warnfg)}
 #chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#chips .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--acc);color:var(--acc);border-radius:14px;padding:2px 4px 2px 10px;font-size:12.5px;background:var(--card)}
 #chips .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;padding:0 6px;line-height:1}#chips .clear{font-size:12.5px}
@@ -71,6 +73,18 @@ save=async function(id,patch){const prev={...(S[id]||{})};const r=await _saveFun
   toastUndo(label,async()=>{UNDOING=true;const p={};if('status' in patch)p.status=prev.status||'new';if('marked' in patch)p.marked=!!prev.marked;try{await _saveFun(id,p)}finally{UNDOING=false}render()})}
  return r};
 
+// ---- search bar: a phone number, an email address, an address, or any word from the ad, your notes and your mail
+const normPhone=s=>String(s).replace(/\D/g,'').replace(/^(00)?32/,'').replace(/^0+/,'');
+let SEARCH={q:'',hits:{}},_sT=null,_sAsked='';
+function qmatch(x){const qs=F.q.trim(),base=(x.addr+' '+x.title+' '+x.agency+' '+x.summary+' '+x.source+' '+x.flags.join(' ')+' '+(x.phone||'')+' '+x.id).toLowerCase();
+ if(qs.toLowerCase().split(/\s+/).every(w=>base.includes(w)))return true;
+ if(/^[+\d\s./()-]{6,}$/.test(qs)){const n=normPhone(qs),p=normPhone(x.phone||'');if(p&&n.length>=6&&(p.includes(n)||n.includes(p)))return true}
+ return SEARCH.q===qs&&!!SEARCH.hits[x.id]}
+function ensureSearch(){const qv=(F.q||'').trim();if(qv===_sAsked)return;_sAsked=qv;clearTimeout(_sT);if(qv.length<3){SEARCH={q:'',hits:{}};return}
+ _sT=setTimeout(async()=>{try{const r=await fetch('/api/search?q='+encodeURIComponent(qv));if(!r.ok)return;const hits=await r.json();if((F.q||'').trim()!==qv)return;SEARCH={q:qv,hits};render()}catch(e){}},300)}
+const hitHtml=x=>{if(!F.q||SEARCH.q!==F.q.trim())return '';const h=(SEARCH.hits[x.id]||[]).find(k=>k.where!=='ad'&&k.text)||(SEARCH.hits[x.id]||[])[0];if(!h||!h.text)return '';return `<div class="hitnote">🔎 found in <b>${esc(h.where)}</b>: “${esc(h.text)}”</div>`};
+(function(){const r=q('run');if(r&&!q('gsearch')){const i=document.createElement('input');i.id='gsearch';i.type='search';i.placeholder='🔎 phone, email, address, word…';i.title='Finds a flat by its phone number, email address, street, a word from the ad, your notes or your mail. Press Enter to jump to the results.';r.insertAdjacentElement('afterend',i);
+ i.addEventListener('input',()=>{q('f_q').value=i.value;if(view!=='all')location.hash='';changed()});i.addEventListener('keydown',e=>{if(e.key==='Enter'){const l=q('list');if(l)l.scrollIntoView()}})}})();
 // ---- quiet mode: no sound, voice, animation, pop-ups or visitors at all
 function applyQuiet(){const on=lsGet('quiet','0')==='1';document.body.classList.toggle('quiet',on);const b=q('quietBtn');if(b){b.textContent=on?'🔇 Quiet':'🔊 Fun';b.title=on?'Quiet mode is on: no sounds, voices, animations or pop-ups. Click to turn the fun back on.':'Click for quiet mode: stops all sounds, voices, animations and pop-ups.'}
  if(on){try{musicStop();speechSynthesis.cancel()}catch(e){}document.querySelectorAll('.vis,.fk,#sticker,.hoverjoke').forEach(e=>e.remove())}}
@@ -218,7 +232,7 @@ let DRAGID=null;document.addEventListener('dragstart',e=>{const c=e.target.close
 document.addEventListener('dragover',e=>{const c=e.target.closest&&e.target.closest('[data-col]');if(c&&DRAGID){e.preventDefault();document.querySelectorAll('.col.over').forEach(x=>x.classList.remove('over'));c.classList.add('over')}});
 document.addEventListener('dragend',()=>{DRAGID=null;document.querySelectorAll('.col.over').forEach(x=>x.classList.remove('over'))});
 document.addEventListener('drop',async e=>{const c=e.target.closest&&e.target.closest('[data-col]');if(c&&DRAGID){e.preventDefault();const id=DRAGID;DRAGID=null;if(st(D.find(d=>d.id===id))!==c.dataset.col){await save(id,{status:c.dataset.col});render()}document.querySelectorAll('.col.over').forEach(x=>x.classList.remove('over'))}});
-const _renderN=render;render=function(){_renderN();countNext();if(FOUND&&FOUND.on){const bn=q('banner');if(bn)bn.innerHTML=foundBar();const sh=q('short'),fu=q('fu');if(sh)sh.innerHTML='';if(fu)fu.innerHTML=''}};
+const _renderN=render;render=function(){_renderN();countNext();ensureSearch();const gs=q('gsearch');if(gs&&document.activeElement!==gs&&gs.value!==F.q)gs.value=F.q;if(FOUND&&FOUND.on){const bn=q('banner');if(bn)bn.innerHTML=foundBar();const sh=q('short'),fu=q('fu');if(sh)sh.innerHTML='';if(fu)fu.innerHTML=''}};
 try{if(!location.hash&&sessionStorage.getItem('landed')!=='1'){sessionStorage.setItem('landed','1');setTimeout(()=>{if(!location.hash&&typeof nextActions==='function'){const a=nextActions();if(a.replies.length+a.viewings.length+a.follow.length>0)location.hash='#next'}},1500)}}catch(e){}
 applyQuiet();
 setTimeout(()=>{if(innerWidth<=700){const f=document.querySelector('details.filters');if(f)f.open=false;['howscore','stats'].forEach(i=>{const d=q(i);if(d&&lsGet(i+'MobileSeen','0')==='0')d.open=false})}},0);

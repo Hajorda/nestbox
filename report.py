@@ -332,6 +332,7 @@ function card(x){const s=st(x),n=(S[x.id]||{}).note||'';return `<div class="card
  <div class="sub">${esc(x.addr)} · ${esc(x.agency)} · ${x.source}${x.similar?` · <b>+${x.similar} similar unit${x.similar>1?'s':''} in the same building</b>`:''}${x.also.map(u=>` · <a href="${esc(u)}" target="_blank" rel="noopener">also listed here</a>`).join('')}</div>
  ${x.summary?`<div class="ai">${esc(x.summary)}</div>`:''}
  ${whyHtml(x)}
+ ${hitHtml(x)}
  ${x.verified?`<details class="desc" data-desc="${x.id}"${OPEN.has(x.id)?' open':''}><summary>read the description (key phrases marked)</summary><div class="desc-body">${DESC[x.id]||'loading…'}</div></details>`:''}
  <div>${x.flags.includes('stay_ok')?`<span class="tag stay" title="The listing text says short stays are accepted or the minimum lease fits your stay. Still confirm the length with the landlord.">✓ SHORT STAY OK</span>`:''}${x.flags.filter(f=>f!=='stay_ok'&&f!=='short_term').map(f=>`<span class="tag ${cls(f)}" title="${esc((TAGHINT[f]||'')+(x.ev&&x.ev[f]?' Found in the text: “'+x.ev[f]+'”':''))}">${esc(label[f]||f.replace('_',' '))}</span>`).join('')}${x.lease?`<span class="tag ${x.lease>5?'warn':''}">min lease ${x.lease} mo</span>`:''}</div>${costsHtml(x)}</div>
  <div class="price">€${x.total}<div class="sub">${x.rent}+${x.charges}</div>${x.effective&&x.effective-x.total>=20?`<div class="sub" title="${esc(valTip(x))}" style="cursor:help">real ≈ ${eur(x.effective)}/mo</div>`:''}${x.fee_range?`<div class="sub" style="color:var(--warnfg)" title="${esc(x.fee_note)}">fee ${eur(x.fee_range[0])}–${eur(x.fee_range[1])} once (assumed)</div>`:''}${x.upfront?`<div class="sub" title="Deposit + first month + extras + one-off fees: the cash you need to move in.">upfront ≈ ${eur(x.upfront)}</div>`:''}<div class="sub" title="${x.m2?(x.m2pp+' m² per person'+(x.m2_src?'. Size taken from the description.':'')):'Size: the seller did not give it.'} ${x.beds==null?'Bedrooms: the seller did not give it.':(x.beds_src==='text'?'Bedrooms taken from the description.':x.beds_src==='rooms'?'The listing data says one room, so this is a studio.':'')}">${x.beds===0?'studio':(x.beds??'? bd')+(x.beds==null?'':' bd')}${x.beds_src?'*':''} · ${x.m2??'?'} m²${x.m2_src?'*':''}${x.ppm2?` · €${x.ppm2}/m²`:''}</div></div>
@@ -413,7 +414,7 @@ const has=(x,k)=>k==='verified'?x.verified:k==='ai'?x.ai:k==='new'?x.new:k==='ma
 const ACTIVE=['contacted','replied','visit','applied'];
 function matches(x){const s=st(x),n=v=>v===''||v==null?null:+v;
  if(!x.manual){if(F.good&&!x.good)return false;if(F.gone&&x.gone&&!ACTIVE.includes(s))return false;if(F.rej&&s==='rejected'&&F.status!=='rejected')return false}
- if(F.q){const h=(x.addr+' '+x.title+' '+x.agency+' '+x.summary+' '+x.source+' '+x.flags.join(' ')).toLowerCase();if(!F.q.toLowerCase().split(/\s+/).every(w=>h.includes(w)))return false}
+ if(F.q&&!qmatch(x))return false
  if(n(F.pmin)!=null&&x.total<n(F.pmin))return false;if(n(F.pmax)!=null&&x.total>n(F.pmax))return false;
  if(F.beds!=='any'){if(x.beds==null)return false;if(F.beds==='2'?x.beds<2:x.beds!==+F.beds)return false}
  if(n(F.m2)!=null&&x.m2!=null&&x.m2<n(F.m2))return false;if(n(F.commute)!=null&&x.minutes!=null&&x.minutes>n(F.commute))return false;

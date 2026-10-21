@@ -16,6 +16,7 @@ import firstrun
 import health
 import mail_link
 import messages
+import search
 import describe
 import gemini
 import sources
@@ -390,6 +391,24 @@ def apply_schedule(body):
 MAIL_LOCK = threading.Lock()
 
 
+def search_payload(q):
+    """Everything that can identify a flat, per flat: the ad, its description, the phone, your notes and history, and the mail about it."""
+    st, statuses, mail = read_json(STATE_FILE, {}), load_status(), read_json(os.path.join(HERE, "mail.json"), {}).get("msgs", {})
+    by_lid = {}
+    for m in mail.values():
+        for lid in m.get("lids", []):
+            by_lid.setdefault(lid, []).append(m)
+    docs = {}
+    for lid, c in st.get("catalog", {}).items():
+        d = st.get("details", {}).get(lid, {})
+        e = statuses.get(lid) or {}
+        parts = [("ad", f"{c.get('title', '')} {c.get('street', '')} {c.get('postal', '')} {c.get('locality', '')} {lid} {c.get('url', '')}"), ("agency", f"{c.get('agency', '')} {d.get('website', '')}"),
+                 ("phone", d.get("phone", "")), ("description", d.get("description", "")), ("your note", e.get("note", "")), ("history", " ; ".join(x.get("d", "") for x in e.get("log", [])))]
+        parts += [("mail", f"{m.get('from', '')} {m.get('to', '')} {m.get('subject', '')} {m.get('snippet', '')}") for m in by_lid.get(lid, [])]
+        docs[lid] = parts
+    return {lid: [{"where": w, "text": s} for w, s in hits] for lid, hits in search.run(q, docs).items()}
+
+
 def templates_payload():
     cfg, st = read_json(CONFIG_FILE, {}), read_json(STATE_FILE, {})
     cat = st.get("catalog", {})
@@ -624,6 +643,8 @@ class H(BaseHTTPRequestHandler):
                                     "areas": [{"postal": p, "name": a["immoweb"].replace("-", " ").title(), "lang": a.get("lang", "fr")} for p, a in cfg.get("areas", {}).items()]})
         if self.path == "/api/health":
             return self._send(200, health.checks())
+        if self.path.startswith("/api/search?"):
+            return self._send(200, search_payload(parse_qs(self.path.partition("?")[2]).get("q", [""])[0]))
         if self.path == "/api/next":
             return self._send(200, next_actions())
         if self.path == "/api/templates":

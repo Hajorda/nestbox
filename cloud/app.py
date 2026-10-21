@@ -20,6 +20,7 @@ try:
 except ImportError:
     webpush = None
 
+import search
 import describe                                    # copied next to this file when deploying
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -476,6 +477,14 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {"key": vapid_public(), "supported": bool(webpush)}) if webpush else self.send(200, {"supported": False})
             except Exception:
                 return self.send(200, {"supported": False})
+        if p == "/api/search":                                              # phone, email, address or any word: the descriptions and your notes
+            qs = (parse_qs(self.path.partition("?")[2]).get("q") or [""])[0][:100]
+            status = read_json("statuses.json", {})
+            docs = {}
+            for lid, text in descriptions().items():
+                e = status.get(lid) or {}
+                docs[lid] = [("ad", lid), ("description", text), ("your note", e.get("note", "")), ("history", " ; ".join(x.get("d", "") for x in e.get("log", [])))]
+            return self.send(200, {lid: [{"where": w, "text": s} for w, s in hits] for lid, hits in search.run(qs, docs).items()})
         if p == "/api/fun":
             return self.send(200, fun_state(user))
         m = re.fullmatch(r"/fun/(fun_[a-z0-9_]+)\.(jpg|png|webp|gif)", p)
