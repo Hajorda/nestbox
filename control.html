@@ -1,0 +1,215 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nestbox control panel</title><link rel="icon" type="image/svg+xml" href="/icon.svg"><style>
+:root{--bg:#fff;--fg:#1d1d1f;--mut:#6b6b70;--line:#e4e4e7;--card:#f7f7f9;--acc:#2856d6;--accfg:#fff;--good:#1e6b34;--bad:#a32020;--warn:#8a5a00;--logbg:#111;--logfg:#d6d6da}
+@media (prefers-color-scheme:dark){:root{--bg:#151517;--fg:#ececf0;--mut:#9a9aa3;--line:#2c2c31;--card:#1d1d21;--acc:#7a9cff;--accfg:#111;--good:#8fd6a4;--bad:#f2a3a3;--warn:#f0c674;--logbg:#0c0c0e}}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:16px;max-width:900px;margin-inline:auto}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}.tabs a{padding:5px 14px;border-radius:8px 8px 0 0;color:var(--mut)}
+.tabs a.on{background:var(--card);color:var(--fg);border:1px solid var(--line);border-bottom:none;margin-bottom:-1px}
+h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:0 0 8px}.sub{color:var(--mut);font-size:12px}a{color:var(--acc);font-weight:600;text-decoration:none}
+section{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 14px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px 14px}.grid label{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mut)}
+input,select,button{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px}input[type=checkbox]{padding:0}
+button{cursor:pointer}button.primary{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600;padding:7px 14px}button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:6px 0}.row label{display:flex;gap:6px;align-items:center;white-space:nowrap}
+.areas{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}.areas label{display:flex;gap:5px;align-items:center;color:var(--fg);font-size:13px;flex-direction:row}
+.stages{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px}.chip{font-size:12px;padding:2px 10px;border-radius:12px;border:1px solid var(--line);color:var(--mut)}
+.chip.active{border-color:var(--acc);color:var(--fg);font-weight:600}.chip.done{color:var(--good)}
+.barwrap{height:12px;border-radius:6px;background:var(--bg);border:1px solid var(--line);overflow:hidden}#barfill,#gfill{height:100%;width:0;background:var(--acc);transition:width .6s ease}
+.barwrap.run #barfill{background-image:linear-gradient(90deg,rgba(255,255,255,.0),rgba(255,255,255,.25),rgba(255,255,255,0));background-size:200% 100%;animation:sweep 1.6s linear infinite}
+@keyframes sweep{from{background-position:200% 0}to{background-position:-200% 0}}@media (prefers-reduced-motion:reduce){.barwrap.run #barfill{animation:none}}
+.htable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}.htable th{text-align:left;color:var(--mut);font-weight:600;padding:4px 10px 4px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.htable td{padding:5px 10px 5px 0;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}.htable .sub{display:block}
+pre{background:var(--logbg);color:var(--logfg);border-radius:8px;padding:10px;max-height:300px;overflow:auto;font:12px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;margin:6px 0 0}
+#msg{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}#msg.on{opacity:1}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-right:6px}.dot.run{background:var(--warn)}.dot.ok{background:var(--good)}.dot.err{background:var(--bad)}
+</style></head><body>
+<nav class="tabs"><a href="/">Listings</a><a href="/#marked">★ Marked</a><a href="/#map">🗺 Map</a><a href="/control" class="on">Control panel</a></nav>
+<h1><img src="/icon.svg" width="30" height="30" alt="" style="vertical-align:-7px;border-radius:7px"> Nestbox <span class="sub" style="font-size:14px;font-weight:400">control panel</span></h1>
+<div class="sub">Everything here runs on your Mac. Keep the <code>serve.py</code> window open for automatic runs.</div>
+
+<section><h2><span class="dot" id="dot"></span><span id="state">…</span></h2>
+ <div class="row">
+  <button class="primary" id="go">Scrape now</button><button id="stop" disabled>Stop</button>
+  <label><input type="checkbox" id="oNotify" checked> notify me about new good flats</label>
+  <label><input type="checkbox" id="oAi" checked> Gemini descriptions <span class="sub" id="keyNote"></span></label>
+  <label><input type="checkbox" id="oOffline"> re-score only (no requests)</label>
+  <label><input type="checkbox" id="oReadOnly"> only read listing pages (skip the searches)</label>
+ </div>
+ <div class="row"><label>read at most <input type="number" id="oDetails" min="0" max="500" style="width:90px" placeholder="default"> listing pages</label>
+  <label>budget for this run <input type="number" id="oMax" min="300" max="5000" step="50" style="width:90px" placeholder="default"> €</label>
+  <a id="open" href="/" class="sub">open listings →</a></div>
+ <div id="prog" hidden><div class="stages" id="stages"></div><div class="barwrap" id="barwrap"><div id="barfill"></div></div><div class="sub" id="progtext" style="margin-top:4px"></div></div>
+ <div class="sub" id="warn"></div><details style="margin-top:6px"><summary class="sub" style="cursor:pointer">live log</summary><pre id="log">no run yet</pre></details></section>
+
+<section><h2>Gemini description check</h2>
+ <div class="sub" id="gStats">loading…</div>
+ <div class="barwrap" style="margin:6px 0"><div id="gfill"></div></div>
+ <div class="row"><label>check <input type="number" id="gN" value="40" min="1" max="200" style="width:80px"> listings now</label>
+  <button id="gGo" class="primary">Check with Gemini</button><span class="sub" id="gEta"></span></div>
+ <div class="sub">Gemini reads the best-ranked listings it has not checked yet, to find minimum lease, one-person-only and registration rules, then the page is re-scored.
+  It sends no request to the listing sites and uses your Gemini quota (about 5 seconds per listing). Progress shows in the bar at the top.</div></section>
+
+<section><h2>Shared copy for your friend <span class="sub">(on Railway)</span></h2>
+ <div class="sub" id="cloudInfo">loading…</div>
+ <div class="row"><button id="cloudGo" class="primary">Publish now</button><a id="cloudLink" href="#" target="_blank" rel="noopener" class="sub"></a></div>
+ <div class="sub">Every scrape publishes the new page automatically. Your friend logs in at the address above, can mark flats, set statuses and write notes, and sees the same flats. Marks and notes you make here are sent to the shared copy too, and his come back here. Scraping, settings and Gemini stay on your computer.</div></section>
+
+<section id="digestBox"><h2>Morning summary and "I found a flat"</h2>
+ <div class="row"><label><input type="checkbox" id="digOn"> Send me a summary every morning</label><label>at <input type="time" id="digTime" style="width:110px"></label><button id="digTest">Send one now</button><span class="sub" id="digMsg"></span></div>
+ <div class="sub">The summary says how many replies wait for you, viewings today, follow-ups due and new good flats. It shows as a notification on this Mac (and on your phone or browser if the shared copy has notifications on). It comes once a day, after the set time, while this server runs.</div>
+ <div id="foundCtl" style="margin-top:10px"></div></section>
+<section><h2>Health check <span class="sub">(what works and what does not)</span></h2>
+ <div id="healthList" class="sub">loading…</div>
+ <div class="row"><button id="healthPing">Test the internet and the sites</button><span class="sub">One request to each site, nothing is searched.</span></div></section>
+<section><h2>Messages <span class="sub">(the texts behind the "copy message" buttons)</span></h2>
+ <div class="row"><label>Message <select id="tplKey"><option value="fr">First message · French</option><option value="nl">First message · Dutch</option><option value="en">First message · English</option><option value="fu_fr">Follow-up · French</option><option value="fu_nl">Follow-up · Dutch</option><option value="fu_en">Follow-up · English</option></select></label>
+ <label>Preview with <select id="tplItem"></select></label><span class="sub" id="tplState"></span></div>
+ <textarea id="tplText" rows="14" style="width:100%;box-sizing:border-box;font:13px/1.45 ui-monospace,Menlo,monospace"></textarea>
+ <div class="sub" style="margin:4px 0">Click to insert: <span id="tplChips"></span></div>
+ <div class="row"><button id="tplSave" class="primary">Save this message</button><button id="tplReset">Back to the original text</button><span class="sub">Saving rebuilds the page so the buttons use the new text.</span></div>
+ <h3 style="margin:10px 0 4px;font-size:14px">Preview</h3><pre id="tplPrev" style="white-space:pre-wrap;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:340px;overflow:auto"></pre></section>
+<section><h2>Gmail link <span class="sub">(replies show up on the right flat)</span></h2>
+ <div class="sub" id="mailInfo">loading…</div>
+ <div class="row"><button id="mailGo" class="primary">Check inbox now</button></div>
+ <details style="margin-top:6px"><summary class="sub" style="cursor:pointer">How to connect (once, about 10 minutes)</summary>
+ <ol class="sub" style="line-height:1.6">
+  <li>Open <b>console.cloud.google.com</b>, create a project (any name), then <b>APIs &amp; Services → Library → Gmail API → Enable</b>.</li>
+  <li><b>OAuth consent screen</b>: User type External, app name anything, your Gmail as support and developer email. Add the scope <code>.../auth/gmail.readonly</code>. Under "Test users" add your own Gmail. At the end press <b>Publish app</b> (otherwise Google logs you out every 7 days; for a private tool the "unverified app" warning is fine).</li>
+  <li><b>Credentials → Create credentials → OAuth client ID → Desktop app</b>. Download the JSON and save it in the project folder as <code>gmail_client.json</code>.</li>
+  <li>In a terminal in the project folder run <code>python3 mail_link.py connect</code>, sign in, press Continue on the "unverified" screen and allow read-only access.</li>
+  <li>Come back here and press "Check inbox now". Only read access is requested: the program cannot send, delete or change mail. Mail text stays on this Mac.</li></ol></details></section>
+<section><h2>Run history <span class="sub">(every scrape, newest first)</span></h2>
+ <div class="sub" id="hTotals">loading…</div>
+ <label class="sub"><input type="checkbox" id="hAll"> also show page rebuilds <span id="hTriv"></span> <span style="opacity:.75">(quick re-scores that read nothing and ask Gemini nothing, about 3 seconds each)</span></label>
+ <div style="overflow-x:auto"><table class="htable"><thead><tr><th>When</th><th>How</th><th>Took</th><th>Requests</th><th>Found</th><th>Added</th><th>Newly taken</th><th>Pages read</th><th>Gemini</th><th>≈ cost</th><th>After the run</th><th>Notes</th></tr></thead><tbody id="hRows"></tbody></table></div>
+ <div class="sub"><b>Requests</b>: pages fetched from the listing sites. <b>Found</b>: listings the searches returned. <b>Added</b>: listings never seen before. <b>Newly taken</b>: listings missing for the second run in a row.
+  <b>Pages read</b>: listing pages opened for the full text. <b>Gemini</b>: analyses and tokens used. <b>≈ cost</b>: tokens × the price in config.json (third-party figure, $0.30 per million in / $2.50 per million out); on the free tier you pay nothing.</div></section>
+
+<section><h2>Automatic runs</h2>
+ <div class="row"><label><input type="checkbox" id="sEnabled"> run automatically</label>
+  <label>every <select id="sEvery"></select></label>
+  <label>between <select id="sStart"></select> and <select id="sEnd"></select></label>
+  <label><input type="checkbox" id="sNotify"> notify</label><label><input type="checkbox" id="sAi"> Gemini</label>
+  <button id="sSave">Save schedule</button></div>
+ <div class="sub" id="sInfo"></div>
+ <div class="sub">Slower is safer: the listing sites are only visited at these times, with a small random delay. After any block the schedule pauses for 24 h. Works while serve.py is running; for runs when it is closed use <code>./install_schedule.sh on</code>.</div></section>
+
+<section><h2>Search settings <span class="sub">(apply from the next run)</span></h2>
+ <div class="grid" id="nums"></div>
+ <div class="row"><label><input type="checkbox" id="cShuttle"> Eurocontrol shuttle from the centre still runs</label>
+  <label><input type="checkbox" id="cMid"> include short-stay platforms (HousingAnywhere, Spotahome)</label>
+  <label>Gemini model <input id="cModel" style="width:170px"></label></div>
+ <div class="sub" style="margin-top:10px"><b>Platform fees</b> (one-off, % of the first month's rent). Used for the "real monthly cost" and value points.</div>
+ <div class="grid" id="fees" style="margin-top:6px"></div><div class="sub" id="feeNotes"></div>
+ <div class="sub" style="margin-top:8px">Areas to search</div><div class="areas" id="areas"></div>
+ <div class="row"><button id="cSave" class="primary">Save settings</button></div></section>
+
+<section><h2>Your details <span class="sub">(used in the copy-message buttons)</span></h2>
+ <div class="grid" id="prof"></div><div class="row"><button id="pSave" class="primary">Save details</button>
+ <span class="sub">After saving, run “re-score only” to rebuild the messages.</span></div></section>
+<div id="msg"></div>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const toast=m=>{const t=$('msg');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2800)};
+async function api(path,body){const r=await fetch(path,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
+const fail=e=>toast('⚠ '+e.message);
+const NUMS={budget:['Budget € / month incl. charges',50],min_m2:['Minimum surface m²',5],pages_per_area:['Result pages per area (minimum)',1],max_late_days:['Drop flats that are free more than … days after your move-in',5],new_days:['A listing counts as NEW if it was put online in the last … days',1],max_pages_per_area:['Read more pages when an area has more listings, up to',1],furnished_pages_per_area:['Furnished-only pages per area',1],
+ followup_first_days:['Remind me to follow up after … days',1],followup_next_days:['…then again after … days',1],followup_max:['Maximum number of follow-ups per flat',1],detail_pages_per_run:['Listing pages read per run',10],ai_per_run:['Gemini analyses per run',10],read_max_minutes:['Only read listings within … min commute',5],notify_min_score:['Notify when score ≥',5],utilities_estimate:['Utilities per month if a platform excludes them (€)',10],unfurnished_extra:['Extra per month for an unfurnished flat (€)',10]};
+const PROF={signature:'Your name (signature)',second_name:'Second person\'s name',phone:'Phone / WhatsApp',email:'Email',visit_times:'When you can visit',workplace:'Workplace (in the messages)',internship_end:'Internship ends (YYYY-MM-DD)',move_in:'Move in (YYYY-MM-DD)',move_out:'Move out (YYYY-MM-DD)'};
+$('nums').innerHTML=Object.entries(NUMS).map(([k,[l,s]])=>`<label>${l}<input type="number" id="n_${k}" step="${s}"></label>`).join('');
+$('prof').innerHTML=Object.entries(PROF).map(([k,l])=>`<label>${l}<input id="p_${k}"></label>`).join('');
+const opt=(a,sel,f)=>a.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${f(v)}</option>`).join('');
+const EVERY=[120,180,240,360,480,720,1440],HOURS=[...Array(25).keys()];
+const fmtEvery=m=>m<1440?(m/60)+' h':'day';
+const FEE_NAMES={housinganywhere:'HousingAnywhere',spotahome:'Spotahome'};
+async function loadConfig(){const c=await api('/api/config');
+ $('fees').innerHTML=Object.entries(c.fees||{}).map(([k,f])=>`<label>${FEE_NAMES[k]||k}: low %<input type="number" id="fee_${k}_lo" min="0" max="100" step="1" value="${Math.round(f.pct_low*100)}"></label><label>${FEE_NAMES[k]||k}: high %<input type="number" id="fee_${k}_hi" min="0" max="100" step="1" value="${Math.round(f.pct_high*100)}"></label><label>${FEE_NAMES[k]||k}: minimum €<input type="number" id="fee_${k}_min" min="0" step="25" value="${f.min}"></label>`).join('');
+ $('feeNotes').innerHTML=Object.entries(c.fees||{}).map(([k,f])=>`<b>${FEE_NAMES[k]||k}:</b> ${esc(f.note||'')}`).join('<br>');
+ for(const k in NUMS)$('n_'+k).value=c[k];$('cShuttle').checked=c.eurocontrol_shuttle;$('cMid').checked=c.midterm_enabled;$('cModel').value=c.gemini_model;
+ $('areas').innerHTML=c.areas.map(a=>`<label><input type="checkbox" value="${a.postal}" ${c.enabled_areas.includes(a.postal)?'checked':''}> ${esc(a.name)} ${a.postal}</label>`).join('');
+ for(const k in PROF)$('p_'+k).value=c.profile[k]||'';
+ $('keyNote').textContent=c.gemini_key_present?'':'(no key in .env: skipped)';if(!c.gemini_key_present)$('oAi').checked=false}
+async function loadSchedule(){const s=await api('/api/schedule');
+ $('sEnabled').checked=s.enabled;$('sEvery').innerHTML=opt(EVERY,s.every_minutes,fmtEvery).replace(/^/,'');
+ $('sStart').innerHTML=opt(HOURS.slice(0,24),s.start_hour,h=>String(h).padStart(2,'0')+':00');$('sEnd').innerHTML=opt(HOURS.slice(1),s.end_hour,h=>String(h).padStart(2,'0')+':00');
+ $('sNotify').checked=s.notify;$('sAi').checked=s.ai;
+ $('sInfo').textContent=s.enabled&&s.next_run_ts?'Next automatic run around '+new Date(s.next_run_ts*1000).toLocaleString([], {weekday:'short',hour:'2-digit',minute:'2-digit'})+' (if inside the hours above)':'Automatic runs are off.'}
+$('cSave').onclick=async()=>{try{const b={eurocontrol_shuttle:$('cShuttle').checked,midterm_enabled:$('cMid').checked,gemini_model:$('cModel').value,enabled_areas:[...document.querySelectorAll('#areas input:checked')].map(i=>i.value)};
+ for(const k in NUMS)b[k]=parseInt($('n_'+k).value,10);
+ b.fees={};for(const k in FEE_NAMES){if($('fee_'+k+'_lo'))b.fees[k]={pct_low:$('fee_'+k+'_lo').value/100,pct_high:$('fee_'+k+'_hi').value/100,min:+$('fee_'+k+'_min').value}}
+ await api('/api/config',b);toast('Settings saved')}catch(e){fail(e)}};
+$('pSave').onclick=async()=>{try{const p={};for(const k in PROF)p[k]=$('p_'+k).value;await api('/api/config',{profile:p});toast('Details saved')}catch(e){fail(e)}};
+$('sSave').onclick=async()=>{try{await api('/api/schedule',{enabled:$('sEnabled').checked,every_minutes:+$('sEvery').value,start_hour:+$('sStart').value,end_hour:+$('sEnd').value,notify:$('sNotify').checked,ai:$('sAi').checked});await loadSchedule();toast('Schedule saved')}catch(e){fail(e)}};
+$('go').onclick=async()=>{const o={notify:$('oNotify').checked,no_ai:!$('oAi').checked,offline:$('oOffline').checked,read_only:$('oReadOnly').checked};
+ if($('oDetails').value!=='')o.details=parseInt($('oDetails').value,10);if($('oMax').value!=='')o.max=parseInt($('oMax').value,10);
+ try{await api('/api/run',o);toast('Started');poll()}catch(e){fail(e)}};
+$('stop').onclick=async()=>{try{await api('/api/stop',{});toast('Stopping…')}catch(e){fail(e)}};
+const fmtT=s=>s<90?Math.max(1,Math.round(s))+' s':Math.round(s/60)+' min';
+function renderProgress(p,running){const box=$('prog');if(!p){box.hidden=true;return}box.hidden=false;
+ $('stages').innerHTML=p.stages.filter(s=>s.total>0||s.state!=='pending').map(s=>`<span class="chip ${s.state}">${s.state==='done'?'✓ ':''}${esc(s.label)}${s.total?` ${Math.min(s.done,s.total)}/${s.total}`:''}</span>`).join('');
+ $('barfill').style.width=Math.round((running?Math.min(p.overall,.99):1)*100)+'%';$('barwrap').classList.toggle('run',running);
+ const cur=p.stages.find(s=>s.state==='active');
+ $('progtext').textContent=running?`${Math.round(Math.min(p.overall,.99)*100)}% · ${p.label||'starting'}${cur&&cur.total?` (${Math.min(cur.done,cur.total)} of ${cur.total})`:''} · about ${fmtT(p.eta_seconds)} left${p.detail?' · '+p.detail:''}`:`Finished in ${fmtT(p.updated-p.started)}`}
+const usd=n=>n==null?'–':n<0.01?'$'+n.toFixed(4):'$'+n.toFixed(2);
+const fmtDate=s=>new Date(s).toLocaleString([], {weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+async function loadHistory(){try{const h=await api('/api/history'),t=h.totals;
+ $('hTotals').innerHTML=`${t.runs} runs · ${t.requests.toLocaleString()} requests to the listing sites · Gemini in total: <b>${t.analyses}</b> analyses, ${Math.round(t.tokens_in/1000)}k tokens in / ${Math.round(t.tokens_out/1000)}k out ≈ <b>${usd(t.cost_est)}</b> if billed (nothing on the free tier)`;
+ const triv=r=>r.offline&&!Object.keys(r.requests||{}).length&&!((r.ai||{}).analyses)&&!r.recheck;     // a page rebuild: no site request, no Gemini
+ const hidden=h.runs.filter(triv).length;$('hTriv').textContent=hidden?`(${hidden} hidden)`:'';
+ $('hRows').innerHTML=h.runs.filter(r=>$('hAll').checked||!triv(r)).map(r=>{const c=r.catalog||{},a=r.ai||{},q=r.requests||{};
+  return `<tr><td>${fmtDate(r.started)}</td><td>${esc(r.source)}${r.offline?(r.read_only?' · read pages only':' · re-score only'):''}</td><td>${r.duration_s>=90?Math.round(r.duration_s/60)+' min':r.duration_s+' s'}</td>
+  <td>${(q.search||0)+(q.read||0)}<span class="sub">${q.search||0} search · ${q.read||0} pages</span></td><td>${r.found??'–'}</td><td>${c.added??'–'}</td><td>${c.newly_possibly_taken??'–'}</td>
+  <td>${r.read_ok??0}${r.read_attempted?' / '+r.read_attempted:''}</td>
+  <td>${a.analyses||0}${a.failed?' (+'+a.failed+' failed)':''}<span class="sub">${((a.tokens_in||0)/1000).toFixed(1)}k in · ${((a.tokens_out||0)/1000).toFixed(1)}k out</span></td><td>${a.analyses?usd(a.cost_est):'–'}</td>
+  <td>${r.live??'–'} live · ${r.good??'–'} good<span class="sub">${r.new_recent??'–'} new · ${r.possibly_taken??'–'} possibly taken</span></td>
+  <td>${r.error?`<span style="color:var(--bad)">${esc(r.error)}</span> `:''}${(r.blocked||[]).length?`<span style="color:var(--bad)">blocked: ${esc(r.blocked.join(', '))}</span> `:''}${r.log?`<a href="/logs/${esc(r.log)}" target="_blank" rel="noopener">log</a>`:''}</td></tr>`}).join('')||'<tr><td colspan="12" class="sub">No run recorded yet.</td></tr>'}catch(e){}}
+let TPL=null,tplTimer=null;
+async function loadTpl(){try{TPL=await api('/api/templates');$('tplItem').innerHTML=TPL.listings.map(l=>`<option value="${esc(l.id)}">${esc(l.addr||l.title)}</option>`).join('');
+ $('tplChips').innerHTML=Object.entries(TPL.placeholders).map(([k,v])=>`<button type="button" class="pill" data-ph="${k}" title="${esc(v)}">{${k}}</button>`).join(' ');showTpl()}catch(e){$('tplState').textContent='could not load'}}
+function showTpl(){if(!TPL)return;const k=$('tplKey').value;$('tplText').value=TPL.templates[k];$('tplState').textContent=TPL.custom.includes(k)?'✎ edited by you':'original text';prevTpl()}
+function prevTpl(){clearTimeout(tplTimer);tplTimer=setTimeout(async()=>{try{const r=await api('/api/templates/preview',{key:$('tplKey').value,text:$('tplText').value,id:$('tplItem').value});$('tplPrev').textContent=r.text}catch(e){}},250)}
+$('tplKey').onchange=showTpl;$('tplItem').onchange=prevTpl;$('tplText').oninput=prevTpl;
+$('tplChips').onclick=e=>{const b=e.target.closest('[data-ph]');if(!b)return;const t=$('tplText'),s=t.selectionStart,v='{'+b.dataset.ph+'}';t.value=t.value.slice(0,s)+v+t.value.slice(t.selectionEnd);t.focus();t.selectionStart=t.selectionEnd=s+v.length;prevTpl()};
+$('tplSave').onclick=async()=>{try{await api('/api/templates/save',{key:$('tplKey').value,text:$('tplText').value});toast('Saved. Rebuilding the page…');await loadTpl()}catch(e){fail(e)}};
+$('tplReset').onclick=async()=>{if(!confirm('Go back to the original text of this message?'))return;try{await api('/api/templates/save',{key:$('tplKey').value,reset:true});toast('Original text restored. Rebuilding the page…');await loadTpl()}catch(e){fail(e)}};
+const HICON={ok:'✓',warn:'⚠',bad:'✗',info:'ℹ'},HCOL={ok:'var(--good,#2ea043)',warn:'var(--warn,#e08a00)',bad:'var(--bad,#d1242f)',info:'var(--mut)'};
+function showHealth(l){$('healthList').innerHTML=l.map(c=>`<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)"><span style="color:${HCOL[c.status]};font-weight:700;width:18px">${HICON[c.status]}</span><div><b>${esc(c.label)}</b> <span class="sub">${esc(c.detail)}</span>${c.fix?`<div style="color:${HCOL[c.status]};font-size:13px">→ ${esc(c.fix)}</div>`:''}</div></div>`).join('')}
+async function loadDigest(){try{const c=await api('/api/config');$('digOn').checked=c.digest_enabled!==false;$('digTime').value=c.digest_time||'08:30';
+ const f=c.found_mode||{on:false};$('foundCtl').innerHTML=f.on?`🎉 <b>You found a flat.</b> Searching, reminders and the summary are paused. <button id="foundOff" class="primary">Resume searching</button>`:'<span class="sub">If you find a flat, press "🏠 this is the one" on its card: searching and reminders pause and the rest is archived. You can resume here.</span>';
+ if($('foundOff'))$('foundOff').onclick=async()=>{try{await api('/api/found',{on:false});toast('Resuming…');loadDigest()}catch(e){fail(e)}}}catch(e){}}
+$('digOn').onchange=async()=>{try{await api('/api/config',{digest_enabled:$('digOn').checked});toast('Saved')}catch(e){fail(e)}};
+$('digTime').onchange=async()=>{try{await api('/api/config',{digest_time:$('digTime').value});toast('Saved')}catch(e){fail(e)}};
+$('digTest').onclick=async()=>{try{const r=await api('/api/digest/test',{});$('digMsg').textContent=r.text}catch(e){fail(e)}};
+async function loadHealth(){try{showHealth(await api('/api/health'))}catch(e){$('healthList').textContent='Could not read the status.'}}
+$('healthPing').onclick=async()=>{$('healthPing').disabled=true;$('healthList').textContent='Testing…';try{showHealth(await api('/api/health/ping',{}))}catch(e){fail(e)}$('healthPing').disabled=false};
+async function loadMailInfo(){try{const j=await api('/api/mail'),i=j.info;let h;
+ if(!i.client_file)h='Step 1 is not done yet: no <code>gmail_client.json</code> in the project folder. Open "How to connect" below.';
+ else if(!i.connected)h='Client file found. Now run <code>python3 mail_link.py connect</code> in a terminal in the project folder and sign in.';
+ else h=`✓ connected${i.me?' as '+esc(i.me):''} · ${i.messages} messages tracked · last check ${i.last_poll?fmtDate(new Date(i.last_poll*1000).toISOString()):'not yet'} (every 5 minutes)`+(i.error?`<br><span style="color:var(--bad)">⚠ ${esc(i.error)}</span>`:'');
+ $('mailInfo').innerHTML=h;$('mailGo').disabled=!i.connected}catch(e){$('mailInfo').textContent='Could not read the status.'}}
+$('mailGo').onclick=async()=>{$('mailGo').disabled=true;$('mailInfo').textContent='Checking…';try{const r=await api('/api/mail/refresh',{});toast(r.error?r.error:(r.new?r.new+' new repl'+(r.new>1?'ies':'y'):'No new replies'))}catch(e){fail(e)}loadMailInfo()};
+async function loadCloud(){try{const c=await api('/api/cloud');
+ if(!c.configured){$('cloudInfo').textContent='Not set up on this computer (CLOUD_URL and CLOUD_TOKEN are missing in the .env file).';$('cloudGo').disabled=true;return}
+ $('cloudLink').href=c.url;$('cloudLink').textContent=c.url;const l=c.last;
+ $('cloudInfo').innerHTML=l?(l.ok?`✓ last published ${fmtDate(l.at)} · page ${l.page_kb} KB · ${l.descriptions} descriptions · ${l.statuses} marks and notes in sync`:`<span style="color:var(--bad)">⚠ last publish failed: ${esc(l.error)}</span>`):'Not published yet. Press "Publish now".'}catch(e){}}
+$('hAll').onchange=loadHistory;
+$('cloudGo').onclick=async()=>{$('cloudGo').disabled=true;$('cloudInfo').textContent='Publishing…';try{await api('/api/cloud/publish',{});toast('Published')}catch(e){fail(e)}$('cloudGo').disabled=false;loadCloud()};
+let gWait=0,gKey=false,gRunning=false;
+async function loadGemini(){try{const g=await api('/api/gemini');gKey=g.key_present;gWait=g.waiting;
+ const pct=g.with_text?Math.round(100*g.checked/g.with_text):0;$('gfill').style.width=pct+'%';
+ $('gStats').innerHTML=gKey?`✓ key found · model <b>${esc(g.model)}</b> · checked <b>${g.checked}</b> of <b>${g.with_text}</b> in-budget listings whose text has been read (${pct}%) · <b>${g.waiting}</b> waiting · ${g.ever_checked} analyses saved in total`:'No Gemini key found. Put GEMINI_API_KEY=… in the file .env next to serve.py, then reload this page.';
+ const n=Math.max(1,Math.min(200,parseInt($('gN').value,10)||1));const m=Math.min(n,g.waiting);$('gEta').textContent=g.waiting?`≈ ${fmtT(m*g.seconds_each)} for ${m} listings${g.avg_cost?` · about ${usd(m*g.avg_cost)} if billed`:''}`:'nothing waiting';
+ $('gGo').disabled=!gKey||!g.waiting||gRunning}catch(e){}}
+$('gN').oninput=loadGemini;
+$('gGo').onclick=async()=>{const n=parseInt($('gN').value,10);try{await api('/api/run',{offline:true,ai:n,notify:false});toast('Gemini check started for up to '+n+' listings');poll()}catch(e){fail(e)}};
+let lastFinished=null;
+async function poll(){let r;try{r=await api('/api/run')}catch(e){return}
+ const log=$('log'),atEnd=log.scrollTop+log.clientHeight>=log.scrollHeight-20;log.textContent=r.log||'no run yet';if(atEnd)log.scrollTop=log.scrollHeight;
+ renderProgress(r.progress,r.running);gRunning=r.running;$('go').disabled=r.running;if(!r.running)$('gGo').disabled=!gKey||!gWait;else $('gGo').disabled=true;$('stop').disabled=!r.running;
+ const d=$('dot');d.className='dot '+(r.running?'run':r.finished?(r.code===0&&!r.blocked?'ok':'err'):'');
+ $('state').textContent=r.running?`Running (${r.source||'started outside this page'}) since ${new Date((r.started||(r.progress&&r.progress.started)||Date.now()/1000)*1000).toLocaleTimeString()}…`:r.finished?`Last run finished ${new Date(r.finished*1000).toLocaleTimeString()} ${r.code===0?'OK':'with errors (exit '+r.code+')'}`:'Idle';
+ $('warn').textContent=r.blocked?'⚠ A site blocked or rate-limited us. Automatic runs are paused for 24 h; wait before running again.':r.paused_until?'Automatic runs paused until '+new Date(r.paused_until*1000).toLocaleString():'';
+ if(r.finished&&r.finished!==lastFinished){if(lastFinished!==null)toast('Run finished: open the listings page');lastFinished=r.finished;loadSchedule().catch(()=>{});loadGemini();loadHistory()}}
+loadGemini();loadHistory();loadCloud();loadMailInfo();loadTpl();loadHealth();loadDigest();setInterval(loadMailInfo,60000);setInterval(loadGemini,30000);setInterval(loadHistory,60000);loadConfig().catch(fail);loadSchedule().catch(fail);poll();setInterval(poll,2000);setInterval(()=>loadSchedule().catch(()=>{}),60000);
+</script></body></html>

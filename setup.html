@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nestbox setup</title><link rel="icon" type="image/svg+xml" href="/icon.svg">
+<style>
+:root{--bg:#fff;--fg:#1c1c1e;--mut:#666;--card:#f6f6f8;--line:#d8d8de;--acc:#2f6fed;--bad:#c62828}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--fg:#ececf0;--mut:#9a9aa5;--card:#1e1e22;--line:#34343c;--acc:#7aa2ff;--bad:#ff8a80}}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,system-ui,Segoe UI,sans-serif;margin:0;padding:0 16px 60px}
+main{max-width:560px;margin:0 auto}h1{font-size:24px;margin:28px 0 4px}.sub{color:var(--mut);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+label{display:block;margin:12px 0 4px;font-weight:600;font-size:14px}input,select{width:100%;box-sizing:border-box;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg)}
+button{font-size:16px;padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}button.primary{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.row{display:flex;gap:10px;margin-top:18px;justify-content:space-between}.dots{display:flex;gap:6px;margin:10px 0}.dots i{height:6px;flex:1;border-radius:3px;background:var(--line)}.dots i.on{background:var(--acc)}
+.areas{display:grid;grid-template-columns:1fr 1fr;gap:6px}.areas label{font-weight:400;margin:0;display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:8px}.areas input{width:auto}
+#err{color:var(--bad);min-height:1.4em;margin-top:8px;font-size:14px}.step{display:none}.step.on{display:block}a{color:var(--acc)}
+</style></head><body><main>
+<h1><img src="/icon.svg" width="36" height="36" alt="" style="vertical-align:-9px;border-radius:9px"> Welcome to Nestbox</h1><div class="sub">A few questions, about two minutes. You can change everything later in the control panel.</div>
+<div class="dots" id="dots"></div>
+<div class="card">
+<div class="step on" id="s0"><h2 style="margin-top:0">What do you need?</h2>
+ <label>Your name (used to sign the messages)<input id="name" autocomplete="name" placeholder="Your name"></label>
+ <label>Second person, if you look together (optional)<input id="second" placeholder="Their name"></label>
+ <label>Phone number (in the messages)<input id="phone" autocomplete="tel" placeholder="+32 ..."></label>
+ <label>Email address (in the messages)<input id="email" type="email" autocomplete="email" placeholder="you@example.com"></label></div>
+<div class="step" id="s1"><h2 style="margin-top:0">Money and dates</h2>
+ <label>Maximum rent per month, charges included (€)<input id="budget" type="number" min="300" max="5000" step="50"></label>
+ <label>You want to move in on<input id="move_in" type="date"></label>
+ <label>and move out on<input id="move_out" type="date"></label>
+ <div class="sub" style="margin-top:8px">Flats that are free too late for your move-in are marked as a problem.</div></div>
+<div class="step" id="s2"><h2 style="margin-top:0">Where do you work?</h2>
+ <label>Workplace (named in the messages)<input id="workplace" placeholder="EUROCONTROL"></label>
+ <label>Internship or job ends on (optional)<input id="internship_end" type="date"></label>
+ <div class="sub" style="margin-top:8px">Commute times are estimated to the EUROCONTROL site in Haren. For another workplace, the commute numbers will not be right yet.</div></div>
+<div class="step" id="s3"><h2 style="margin-top:0">Which areas?</h2><div class="sub">Tick the areas to search. More areas means a longer search.</div><div class="areas" id="areas" style="margin-top:10px"></div></div>
+<div class="step" id="s4"><h2 style="margin-top:0">Almost done</h2><p>When you press Finish, your answers are saved and the page is rebuilt.</p><p class="sub">Next you can start the first search (about 10 minutes the first time). Optional extras (Gemini, a shared copy for a friend, Gmail) are explained in the control panel.</p><div id="done" style="display:none"><p><b>✓ Saved.</b></p><div class="row" style="justify-content:flex-start"><button class="primary" id="go">Start the first search</button><a href="/" style="padding:10px">Open the page</a></div></div></div>
+<div id="err"></div>
+<div class="row" id="nav"><button id="back">Back</button><button class="primary" id="next">Next</button></div>
+</div>
+<div class="sub">Just looking? Run <code>python3 demo.py</code> for a demo with sample listings.</div>
+</main><script>
+const $=id=>document.getElementById(id);let step=0;const N=5;let AREAS=[];
+$('dots').innerHTML=Array.from({length:N},(_,i)=>`<i id="d${i}"></i>`).join('');
+function show(){for(let i=0;i<N;i++){$('s'+i).classList.toggle('on',i===step);$('d'+i).classList.toggle('on',i<=step)}$('back').style.visibility=step?'visible':'hidden';$('next').textContent=step===N-1?'Finish':'Next';$('err').textContent=''}
+function val(){const e=m=>{$('err').textContent=m;return false};
+ if(step===0){if(!$('name').value.trim())return e('Please enter your name.');if(!/.+@.+\..+/.test($('email').value))return e('Please enter a valid email address.')}
+ if(step===1){const b=+$('budget').value;if(!(b>=300&&b<=5000))return e('Budget: between 300 and 5000 euros.');if(!$('move_in').value||!$('move_out').value||$('move_out').value<=$('move_in').value)return e('Move-out must be after move-in.')}
+ if(step===3&&!document.querySelectorAll('#areas input:checked').length)return e('Pick at least one area.');return true}
+async function init(){const r=await (await fetch('/api/setup')).json(),p=r.profile||{};
+ if(p.signature&&p.signature!=='Your Name')$('name').value=p.signature;$('second').value=p.second_name||'';$('phone').value=/^\+32 000/.test(p.phone||'')?'':(p.phone||'');$('email').value=/example\.com$/.test(p.email||'')?'':(p.email||'');
+ $('budget').value=r.budget||1300;$('move_in').value=p.move_in||'';$('move_out').value=p.move_out||'';$('workplace').value=p.workplace||'EUROCONTROL';$('internship_end').value=p.internship_end||'';
+ AREAS=r.areas;$('areas').innerHTML=AREAS.map(a=>`<label><input type="checkbox" value="${a.postal}" ${r.enabled.includes(a.postal)?'checked':''}>${a.postal} ${a.name}</label>`).join('');show()}
+$('next').onclick=async()=>{if(!val())return;if(step<N-1){step++;show();return}
+ $('next').disabled=true;try{const res=await fetch('/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('name').value,second_name:$('second').value,phone:$('phone').value,email:$('email').value,budget:+$('budget').value,move_in:$('move_in').value,move_out:$('move_out').value,workplace:$('workplace').value,internship_end:$('internship_end').value,areas:[...document.querySelectorAll('#areas input:checked')].map(i=>i.value)})});
+  const j=await res.json();if(!res.ok)throw new Error(j.error||'could not save');$('done').style.display='block';$('nav').style.display='none'}catch(e){$('err').textContent=e.message;$('next').disabled=false}};
+$('back').onclick=()=>{step=Math.max(0,step-1);show()};
+$('go').onclick=async()=>{$('go').disabled=true;$('go').textContent='Starting…';try{await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});location.href='/control'}catch(e){location.href='/control'}};
+init();
+</script></body></html>

@@ -1,0 +1,35 @@
+# secrets and personal data
+.env
+cloud_credentials.txt
+config.json
+# generated or private runtime data
+state.json
+statuses.json
+manual.json
+history.json
+progress.json
+cloud_status.json
+schedule.json
+listings.html
+listings.csv
+data/
+logs/
+*.log
+__pycache__/
+img/
+mail.json
+gmail_client.json
+gmail_token.json
+demo_site/
+templates.json
+source_health.json
+
+# generated or machine-specific files
+.DS_Store
+digest.json
+pool.json
+source_health.json
+scheduled.log
+cloud/logos/
+cloud/describe.py
+*.plist

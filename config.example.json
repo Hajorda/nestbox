@@ -1,0 +1,195 @@
+{
+  "profile": {
+    "names": "",
+    "signature": "Your Name",
+    "second_name": "",
+    "phone": "+32 000 00 00 00",
+    "email": "you@example.com",
+    "income": "",
+    "workplace": "EUROCONTROL",
+    "internship_end": "2027-04-15",
+    "visit_times": "weekdays after 18:00 and weekends",
+    "move_in": "2027-01-01",
+    "move_out": "2027-06-30"
+  },
+  "budget": 1300,
+  "min_m2": 25,
+  "eurocontrol_shuttle": false,
+  "notify_min_score": 75,
+  "pages_per_area": 2,
+  "furnished_pages_per_area": 1,
+  "detail_pages_per_run": 100,
+  "areas": {
+    "1130": {
+      "immoweb": "haren",
+      "immovlan": "1130-haren",
+      "centre": [
+        50.889,
+        4.42
+      ],
+      "lang": "fr"
+    },
+    "1140": {
+      "immoweb": "evere",
+      "immovlan": "1140-evere",
+      "centre": [
+        50.87,
+        4.403
+      ],
+      "lang": "fr"
+    },
+    "1030": {
+      "immoweb": "schaerbeek",
+      "immovlan": "1030-schaerbeek",
+      "centre": [
+        50.867,
+        4.377
+      ],
+      "lang": "fr"
+    },
+    "1200": {
+      "immoweb": "woluwe-saint-lambert",
+      "immovlan": "1200-woluwe-saint-lambert",
+      "centre": [
+        50.846,
+        4.425
+      ],
+      "lang": "fr"
+    },
+    "1831": {
+      "immoweb": "diegem",
+      "immovlan": "1831-diegem",
+      "centre": [
+        50.893,
+        4.433
+      ],
+      "lang": "nl"
+    },
+    "1830": {
+      "immoweb": "machelen",
+      "immovlan": "1830-machelen",
+      "centre": [
+        50.91,
+        4.442
+      ],
+      "lang": "nl"
+    },
+    "1930": {
+      "immoweb": "zaventem",
+      "immovlan": "1930-zaventem",
+      "centre": [
+        50.884,
+        4.473
+      ],
+      "lang": "nl"
+    },
+    "1932": {
+      "immoweb": "sint-stevens-woluwe",
+      "immovlan": "1932-sint-stevens-woluwe",
+      "centre": [
+        50.868,
+        4.445
+      ],
+      "lang": "nl"
+    },
+    "1800": {
+      "immoweb": "vilvoorde",
+      "immovlan": "1800-vilvoorde",
+      "centre": [
+        50.928,
+        4.425
+      ],
+      "lang": "nl"
+    },
+    "1120": {
+      "immoweb": "neder-over-heembeek",
+      "immovlan": "1120-neder-over-heembeek",
+      "centre": [
+        50.9,
+        4.39
+      ],
+      "lang": "fr"
+    },
+    "1210": {
+      "immoweb": "saint-josse-ten-noode",
+      "immovlan": "1210-saint-josse-ten-noode",
+      "centre": [
+        50.853,
+        4.373
+      ],
+      "lang": "fr"
+    },
+    "1000": {
+      "immoweb": "brussels",
+      "immovlan": "1000-brussels",
+      "centre": [
+        50.846,
+        4.352
+      ],
+      "lang": "fr"
+    },
+    "1020": {
+      "immoweb": "laeken",
+      "immovlan": "1020-laeken",
+      "centre": [
+        50.88,
+        4.35
+      ],
+      "lang": "fr"
+    },
+    "1040": {
+      "immoweb": "etterbeek",
+      "immovlan": "1040-etterbeek",
+      "centre": [
+        50.836,
+        4.389
+      ],
+      "lang": "fr"
+    }
+  },
+  "read_max_minutes": 60,
+  "ai_per_run": 60,
+  "gemini_model": "gemini-2.5-flash",
+  "midterm_enabled": true,
+  "spotahome_pages": 2,
+  "housinganywhere_places": [
+    "Brussels",
+    "Schaerbeek",
+    "Evere",
+    "Etterbeek",
+    "Woluwe-Saint-Lambert",
+    "Saint-Josse-ten-Noode",
+    "Ixelles",
+    "Zaventem",
+    "Machelen",
+    "Vilvoorde",
+    "Haren"
+  ],
+  "utilities_estimate": 120,
+  "unfurnished_extra": 100,
+  "fees": {
+    "housinganywhere": {
+      "pct_low": 0.25,
+      "pct_high": 0.4,
+      "min": 175,
+      "note": "HousingAnywhere publishes 25-40% of the first month's rent (minimum 175 EUR) outside the Netherlands, charged when the landlord accepts you"
+    },
+    "spotahome": {
+      "pct_low": 0.2,
+      "pct_high": 0.3,
+      "min": 0,
+      "note": "NOT CONFIRMED: Spotahome publishes no tenant fee formula; 20-30% is a third-party claim. Check the booking fee at checkout"
+    }
+  },
+  "max_pages_per_area": 4,
+  "new_days": 7,
+  "gemini_price": {
+    "input_per_million": 0.3,
+    "output_per_million": 2.5,
+    "currency": "USD",
+    "note": "Gemini 2.5 Flash paid-tier price per million tokens as reported by third-party sources (not confirmed on Google's own page). On the free tier you pay nothing."
+  },
+  "max_late_days": 45,
+  "unknown_extra_estimate": 60,
+  "setup_done": false
+}
