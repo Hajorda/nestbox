@@ -77,6 +77,12 @@ assert list(search.run("0473/79.65.52", docs)) == ["a"] and list(search.run("003
 assert list(search.run("02 555 01 04", docs)) == ["b"] and search.run("kemal@yesproperties.be", docs)["a"][0][0] == "description"
 assert "équipée" in search.run("equipee frigo", docs)["a"][0][1] and search.run("zzzz", docs) == {} and search.run("ab", docs) == {}
 
+# ---- contact details written in an ad
+import report
+assert report.contacts("Contactez Laure à ld@plurivalent.com. Tel: 0473/79.65.52 ou +32 2 555 01 04. info@immoweb.be photo@2x.png") == (["ld@plurivalent.com"], ["0473/79.65.52", "+32 2 555 01 04"])
+assert report.contacts("Info: kemal@yesproperties.be / +32 470 81 70 37", "+32470817037") == (["kemal@yesproperties.be"], [])
+assert report.contacts("Prix 1250 euros, 85 m2, ref 12345678") == ([], [])
+
 # ---- the demo builds a page that contains the demo listings and no personal data
 r = subprocess.run([sys.executable, os.path.join(HERE, "demo.py"), "--build-only"], capture_output=True, text=True)
 page = open(os.path.join(HERE, "demo_site", "listings.html"), encoding="utf-8").read()

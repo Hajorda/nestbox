@@ -17,6 +17,7 @@ It was built by an intern who arrived in Brussels with a hostel bed, a budget an
 - 🏁 **Ranks flats** with a score you can understand, and says in one line *why* a flat is (or is not) good.
 - ▶ **Tells you what to do now.** One page: replies waiting for your answer, viewings today, follow-ups due, the best new flats to contact.
 - 🔎 **Search bar** on every page (press `/`): results appear as you type, grouped by phone number (any spelling), address, your notes, your mail and words from the ad. Enter opens the flat in a panel, so you stay on your tab.
+- 📇 **Shows the email and extra phone numbers written in the ad**, with copy buttons, and the Gmail button fills in the "To:" for you.
 - ✉ **Writes the first message** in French, Dutch or English (you can edit the texts), with copy, WhatsApp and Gmail buttons.
 - 📬 **Watches your Gmail (read-only)** and shows landlords' replies on the right flat.
 - 📅 **Keeps your viewings** and exports them to your calendar.

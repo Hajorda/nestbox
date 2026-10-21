@@ -1,5 +1,5 @@
 """listings.csv + listings.html (contact-now shortlist, filters, copy-message buttons, status + notes)."""
-import csv, hashlib, json, os
+import csv, hashlib, json, os, re
 import fun
 import firstrun
 import ux
@@ -40,6 +40,23 @@ def position(it, cfg):
     return round(base[0] + ((h % 1000) / 1000 - 0.5) * 0.008, 5), round(base[1] + (((h >> 10) % 1000) / 1000 - 0.5) * 0.012, 5), True
 
 
+EMAIL_RX = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
+PHONE_RX = re.compile(r"(?:\+|00)\d[\d\s./()-]{7,}\d|\b0\d[\d\s./()-]{6,}\d")
+SKIP_EMAIL = re.compile(r"immoweb|immovlan|2ememain|housinganywhere|spotahome|example\.|noreply|no-reply|sentry|\.(png|jpg|gif|svg)$", re.I)
+
+
+def contacts(text, known_phone=""):
+    """Email addresses and phone numbers the seller wrote in the ad text (the sites' own addresses and image names are skipped)."""
+    emails = list(dict.fromkeys(e.lower() for e in EMAIL_RX.findall(text or "") if not SKIP_EMAIL.search(e)))[:3]
+    known = re.sub(r"\D", "", known_phone or "")[-8:]
+    phones = []
+    for p in PHONE_RX.findall(text or ""):
+        digits = re.sub(r"\D", "", p)
+        if 9 <= len(digits) <= 14 and digits[-8:] != known and p.strip() not in phones:
+            phones.append(p.strip())
+    return emails, phones[:2]
+
+
 def write_html(items, messages, path, cfg):
     data = [{
         "id": it["id"], "score": it["score"], "new": bool(it.get("new")), "title": it["title"][:80], "url": it["url"],
@@ -59,7 +76,7 @@ def write_html(items, messages, path, cfg):
                   "min_stay": it.get("min_stay_months"), "max_stay": it.get("max_stay_months"), "couples_ok": it.get("couples_ok")},
         "upfront": it.get("upfront"), "late_days": it.get("late_days"), "beds_src": it.get("beds_src") or "", "m2_src": it.get("m2_src") or "",
         "lat": position(it, cfg)[0], "lon": position(it, cfg)[1], "approx": position(it, cfg)[2],
-        "first_at": it.get("first_at") or "", "seen_at": it.get("seen_at") or "", "read_at": it.get("read_at") or "", "missed": it.get("missed", 0), "last_seen": it.get("last_seen") or "", "manual": bool(it.get("manual")), "rechecked": it.get("rechecked_at") or "", "similar": it.get("similar", 0), "postal": it.get("postal") or "", "locality": it.get("locality") or "", "ai": bool(it.get("ai")), "also": it.get("also", []), "msg": messages[it["id"]], "lang": messages[it["id"]]["_lang"],
+        "emails": contacts(it.get("description"), it.get("phone"))[0], "phones2": contacts(it.get("description"), it.get("phone"))[1], "first_at": it.get("first_at") or "", "seen_at": it.get("seen_at") or "", "read_at": it.get("read_at") or "", "missed": it.get("missed", 0), "last_seen": it.get("last_seen") or "", "manual": bool(it.get("manual")), "rechecked": it.get("rechecked_at") or "", "similar": it.get("similar", 0), "postal": it.get("postal") or "", "locality": it.get("locality") or "", "ai": bool(it.get("ai")), "also": it.get("also", []), "msg": messages[it["id"]], "lang": messages[it["id"]]["_lang"],
     } for it in items]
     tram = [[n, p[0], p[1]] for n, p in (json.load(open(os.path.join(HERE, "data", "tram62.json"))).get("stops") or {}).items()]
     page = TEMPLATE.replace("__TRAM__", json.dumps(tram, ensure_ascii=False)).replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/")) \
@@ -319,7 +336,7 @@ let MAIL={},MAILSIG='';
 const nameOf=f=>(String(f||'').split('<')[0].replace(/"/g,'').trim()||String(f||''));
 const agoT=d=>{const m=Math.round((Date.now()-Date.parse(d))/6e4);return m<2?'just now':m<90?m+' min ago':m<2880?Math.round(m/60)+' h ago':Math.round(m/1440)+' days ago'};
 const gmailSubject=x=>({fr:'Demande de visite – ',nl:'Bezichtiging aanvragen – ',en:'Viewing request – '}[x.lang]||'Viewing request – ')+(x.addr||'');
-const gmailUrl=x=>'https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(gmailSubject(x))+'&body='+encodeURIComponent((x.msg&&x.msg[x.lang])||'');
+const gmailUrl=(x,to)=>'https://mail.google.com/mail/?view=cm&fs=1'+((to||(x.emails&&x.emails[0]))?'&to='+encodeURIComponent(to||x.emails[0]):'')+'&su='+encodeURIComponent(gmailSubject(x))+'&body='+encodeURIComponent((x.msg&&x.msg[x.lang])||'');
 const mailHtml=x=>{const m=MAIL[x.id];if(!m)return '';let h='';
  if(m.last){const l=m.last;h+=`<div class="mailnote">✉ <b>${m['in']} ${m['in']>1?'replies':'reply'}</b> · last from ${esc(nameOf(l.from))}, ${agoT(l.date)}: “${esc(l.snippet)}” <a href="https://mail.google.com/mail/u/0/#all/${esc(l.thread)}" target="_blank" rel="noopener">open in Gmail</a></div>`;
   if(l.scam)h+=`<div class="mailnote" style="background:var(--bad);color:var(--badfg)">⚠ <b>spam</b></div>`;}
@@ -351,6 +368,7 @@ function card(x){const s=st(x),n=(S[x.id]||{}).note||'';return `<div class="card
  ${(S[x.id]||{}).by?`<span class="sub" title="Who last changed the status, mark or note">by ${esc(S[x.id].by)}</span>`:''}
  <select data-st="${x.id}">${ST.map(o=>`<option ${o===s?'selected':''}>${o}</option>`).join('')}</select></div>
  ${(S[x.id]||{}).wrong?`<div class="wrongnote">⚑ You marked this wrong${S[x.id].wrong.note?': “'+esc(S[x.id].wrong.note)+'”':''}. Tags at that moment: ${esc((S[x.id].wrong.flags||[]).join(', ')||'none')}. ${x.rechecked?'Rechecked at '+esc(x.rechecked.replace('T',' ').slice(0,16))+' (the tags above are the new ones). ':'Not rechecked yet. '}Press "remove wrong mark" when it looks right.</div>`:''}
+ ${contactHtml(x)}
  ${mailHtml(x)}
  ${schedHtml(x)}
  ${histHtml(x)}

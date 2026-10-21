@@ -8,6 +8,7 @@ HTML = '<div id="nextview"><h2>▶ What to do now <span class="sub" id="nextSum"
 CSS = r"""
 /* toast with an action */
 #toast{display:flex;gap:10px;align-items:center}#toast.on{pointer-events:auto}#toast button{background:transparent;color:var(--bg);border:1px solid currentColor;border-radius:6px;padding:1px 10px;font-weight:700;cursor:pointer}
+.contactline{grid-column:2/4;font-size:13px;margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}.contactline button{font-size:12px;padding:1px 8px}
 .hitnote{font-size:12.5px;margin-top:3px;color:var(--okfg);background:var(--ok);border-radius:6px;padding:3px 8px}.hitnote b{font-weight:700}
 #top .tabs{flex-wrap:wrap;row-gap:4px}.tabs a{white-space:nowrap}.fmodal{position:fixed;inset:0;z-index:2050;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;padding:3vh 10px;overflow:auto}.fmodal .fbox2{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:14px;max-width:920px;width:100%;padding:8px 14px 16px}.fmodal .fhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
 #gsdrop{position:fixed;z-index:2100;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5);max-height:72vh;overflow:auto;width:min(540px,94vw);display:none}#gsdrop.on{display:block}
@@ -129,6 +130,10 @@ const _renderFM=render;render=function(){_renderFM();if(FM){const b=document.get
   const fl=e.target.closest('[data-fm-list]');if(fl){const id=fl.dataset.fmList;closeFlat();q('f_q').value=(DM.get(id)||{}).addr||'';location.hash='';changed();return}
   if(e.target.id==='fmClose'){closeFlat();return}if(!e.target.closest('#gsdrop')&&e.target!==i)gsClose()});
  addEventListener('keydown',e=>{if(e.key==='Escape')closeFlat()})})();
+// ---- the contact details the seller wrote in the ad (email, extra phone numbers), with copy buttons; the Gmail button fills in the To: field
+const contactHtml=x=>{const e=x.emails||[],p=x.phones2||[];if(!e.length&&!p.length)return '';
+ return `<div class="contactline">📇 <span class="sub">in the ad:</span> ${e.map(a=>`<span><b>${esc(a)}</b> <button data-copy="${esc(a)}" title="Copy">copy</button> <a class="btn" href="${gmailUrl(x,a)}" target="_blank" rel="noopener" data-gm="${x.id}" title="Opens Gmail with this address already in To:">✉ write</a></span>`).join('')}${p.map(t=>`<span><b>${esc(t)}</b> <button data-copy="${esc(t)}">copy</button> <a class="btn" href="tel:${esc(t.replace(/[^\d+]/g,''))}">☎ call</a></span>`).join('')}</div>`};
+document.addEventListener('click',async e=>{const c=e.target.closest('[data-copy]');if(c){try{await navigator.clipboard.writeText(c.dataset.copy);toast('Copied: '+c.dataset.copy)}catch(x){toast('Copy failed: select it by hand')}}});
 // ---- quiet mode: no sound, voice, animation, pop-ups or visitors at all
 function applyQuiet(){const on=lsGet('quiet','0')==='1';document.body.classList.toggle('quiet',on);const b=q('quietBtn');if(b){b.textContent=on?'🔇 Quiet':'🔊 Fun';b.title=on?'Quiet mode is on: no sounds, voices, animations or pop-ups. Click to turn the fun back on.':'Click for quiet mode: stops all sounds, voices, animations and pop-ups.'}
  if(on){try{musicStop();speechSynthesis.cancel()}catch(e){}document.querySelectorAll('.vis,.fk,#sticker,.hoverjoke').forEach(e=>e.remove())}}
