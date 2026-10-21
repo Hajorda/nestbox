@@ -194,7 +194,7 @@ def _msg(raw, me, strong):
             "mine": bool(me) and me.lower() in _hdr(raw, "from").lower(), "strong": strong}
 
 
-def poll(catalog, statuses, api_fn=None, days=45, limit=40, now=None):
+def poll(catalog, statuses, api_fn=None, days=45, limit=40, now=None, subjects=None):
     """Checks the inbox for the flats you contacted. Returns the list of new replies [(lid, msg)] (messages from others that were not stored before)."""
     api_fn = api_fn or api
     now = now or time.time()
@@ -212,8 +212,14 @@ def poll(catalog, statuses, api_fn=None, days=45, limit=40, now=None):
                     agency_flats.setdefault(w, set()).add(lid)
             for mid in [k for k, v in d["msgs"].items() if AUTOMATED_SUBJECT.search(v.get("subject", "")) or AUTOMATED_FROM.search(v.get("from", ""))]:
                 del d["msgs"][mid]                                       # mail stored before these rules existed
+            subj_count = {}
+            for s in (subjects or {}).values():
+                subj_count[s] = subj_count.get(s, 0) + 1
             for lid, c in todo:
                 strong, weak = terms(lid, c)
+                s = (subjects or {}).get(lid)
+                if s:                                   # the subject of the draft the Gmail button made: a reply keeps it ("Re: ...")
+                    (strong if subj_count[s] == 1 else weak).append(f'subject:"{s}"')
                 for q_terms, is_strong in ((strong, True), (weak, False)):
                     if not q_terms:
                         continue

@@ -101,4 +101,18 @@ assert S4["in"] == 0 and [x["id"] for x in S4["maybe"]] == ["h2"], S4           
 assert ml.scam("Evan <mercurio@gmail.com>", "Re: Immoweb - Interest in a To rent ad", "Dear Customer, Welcome to HousingAnywhere!")
 assert not ml.scam("HousingAnywhere <hello@housinganywhere.com>", "Welcome", "Welcome to HousingAnywhere")
 assert not ml.scam("Anna <anna@gmail.com>", "Re: Viewing request", "Friday at 15:00 works")
+# a reply that keeps the subject of the draft the Gmail button made is matched even when the text never names the street
+ml.DATA_FILE = os.path.join(tempfile.mkdtemp(), "mail.json")
+CAT5 = {"iw-1": {"street": "", "postal": "1210", "agency": "PRIVATE", "source": "immoweb"}, "iw-2": {"street": "", "postal": "1210", "agency": "PRIVATE", "source": "immoweb"}}
+def fake5(path, params=None):
+    if path == "/messages":
+        return {"messages": [{"id": "s1"}]} if "subject:" in params["q"] and "saint-josse" in params["q"] else {"messages": []}
+    return raw("s1", "TS", "Laure <l@gmail.com>", "Re: Demande de visite – 1210 saint-josse", "l'appartement est situé rue des Deux-Églises", 1_800_000_000)
+ST5 = {"iw-1": {"status": "contacted"}}
+new5 = ml.poll(CAT5, ST5, api_fn=fake5, subjects={"iw-1": "Demande de visite – 1210 saint-josse"})
+assert [n[0] for n in new5] == ["iw-1"] and ml.summary()["iw-1"]["in"] == 1
+ml.DATA_FILE = os.path.join(tempfile.mkdtemp(), "mail.json")                       # two flats with the same subject: only "possible"
+ST5["iw-2"] = {"status": "contacted"}
+ml.poll(CAT5, ST5, api_fn=fake5, subjects={"iw-1": "Demande de visite – 1210 saint-josse", "iw-2": "Demande de visite – 1210 saint-josse"})
+assert ml.summary().get("iw-1", {"in": 0})["in"] == 0
 print("mail_link tests passed")

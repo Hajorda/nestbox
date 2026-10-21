@@ -449,7 +449,16 @@ def mail_check():
         return None
     try:
         state, statuses = read_json(STATE_FILE, {}), load_status()
-        new = mail_link.poll(state.get("catalog", {}), statuses)
+        cfg0 = read_json(CONFIG_FILE, {})
+        pre = {"fr": "Demande de visite – ", "nl": "Bezichtiging aanvragen – ", "en": "Viewing request – "}
+        subjects = {}
+        for lid, e in statuses.items():                       # the subject the ✉ Gmail button gives each flat (see the page): it names the address
+            c = state.get("catalog", {}).get(lid)
+            if c and e.get("status") in mail_link.ACTIVE:
+                addr = " ".join(x for x in (c.get("street"), c.get("postal"), c.get("locality")) if x)
+                if addr:
+                    subjects[lid] = pre.get(messages.language(c, cfg0), pre["en"]) + addr
+        new = mail_link.poll(state.get("catalog", {}), statuses, subjects=subjects)
         summ = mail_link.summary()
         for lid, e0 in list(load_status().items()):                     # a "replied" the mail check set from automated mail that is no longer a reply: take it back
             if e0.get("status") == "replied" and any(x.get("by") == "mail" and x.get("k") == "reply" for x in (e0.get("log") or [])) and not (summ.get(lid) or {}).get("in"):
