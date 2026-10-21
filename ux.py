@@ -9,7 +9,7 @@ CSS = r"""
 /* toast with an action */
 #toast{display:flex;gap:10px;align-items:center}#toast.on{pointer-events:auto}#toast button{background:transparent;color:var(--bg);border:1px solid currentColor;border-radius:6px;padding:1px 10px;font-weight:700;cursor:pointer}
 .hitnote{font-size:12.5px;margin-top:3px;color:var(--okfg);background:var(--ok);border-radius:6px;padding:3px 8px}.hitnote b{font-weight:700}
-#gsearch{margin-left:8px;width:230px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}
+#top .tabs{flex-wrap:wrap;row-gap:4px}.tabs a{white-space:nowrap}#gsearch{margin-left:8px;flex:1 1 200px;max-width:340px;min-width:150px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}
 .why{font-size:12.5px;margin-top:2px;color:var(--mut)}.why b.ok{color:var(--goodfg)}.why b.no{color:var(--badfg)}.why .chk{color:var(--warnfg)}
 #chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#chips .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--acc);color:var(--acc);border-radius:14px;padding:2px 4px 2px 10px;font-size:12.5px;background:var(--card)}
 #chips .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;padding:0 6px;line-height:1}#chips .clear{font-size:12.5px}
@@ -136,7 +136,7 @@ document.addEventListener('keydown',e=>{const a=document.activeElement;if(a&&/^(
  else if(k==='m'&&c){const b=c.querySelector('[data-mark]');if(b)b.click()}
  else if(k==='o'&&c){const a1=c.querySelector('div > a[target=_blank]');if(a1)window.open(a1.href,'_blank','noopener')}
  else if(k==='c'&&c){const b=c.querySelector('button[data-id][data-l]');if(b)b.click()}
- else if(k==='/'){e.preventDefault();const s=q('f_q');if(s)s.focus()}
+ else if(k==='/'){e.preventDefault();const s=q('gsearch')||q('f_q');if(s){s.focus();s.select()}}
  else if(k==='q'){lsSet('quiet',lsGet('quiet','0')==='1'?'0':'1');applyQuiet()}
  else if(k==='?'){const o=document.getElementById('kbhelp');if(o){o.remove();return}const d=document.createElement('div');d.id='kbhelp';d.innerHTML='<div class="box"><b>Keyboard shortcuts</b><table><tr><td><kbd>j</kbd> <kbd>k</kbd></td><td>next / previous flat</td></tr><tr><td><kbd>m</kbd></td><td>mark or unmark</td></tr><tr><td><kbd>o</kbd></td><td>open the original ad</td></tr><tr><td><kbd>c</kbd></td><td>copy the message</td></tr><tr><td><kbd>/</kbd></td><td>search</td></tr><tr><td><kbd>q</kbd></td><td>quiet mode</td></tr><tr><td><kbd>?</kbd></td><td>this help</td></tr></table></div>';d.onclick=()=>d.remove();document.body.appendChild(d)}});
 addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.getElementById('kbhelp');if(o)o.remove()}});

@@ -72,7 +72,8 @@ Everything below is optional. Each one has a step-by-step in the control panel.
 
 - **It scrapes websites.** It follows each site's robots.txt, goes slowly, one request at a time per site, and reads each listing page once. Following robots.txt is good manners, but it is **not a legal guarantee**: a site's terms of use may still forbid scraping, and listings contain other people's data (agents' names and phone numbers). This is for **personal use**, at your own risk, and not legal advice. Don't hammer anyone.
 - **Scrapers break.** Sites change their pages. When a site suddenly returns nothing, Nestbox shows a red bar saying so instead of quietly showing fewer flats. When that happens it needs a fix.
-- **It is a Brussels thing.** The areas, the commute estimates (to EUROCONTROL in Haren) and the messages are Brussels-flavoured. Other cities would need work.
+- **It has only been tested in Brussels.** On the first screen it asks for your name, budget, move-in and move-out dates, workplace and areas; flats that are free too long after your move-in are flagged. The areas, the commute estimates (to EUROCONTROL in Haren) and the message texts are Brussels-specific, so other cities would need work.
+
 - **The ads are read by keywords** (plus Gemini if you use it). It is good, not perfect. The flags say where in the text they found the thing, so you can check. Always read the real ad before you send money.
 - **Scams exist.** A "reply" from a Gmail address that sounds like a rental platform is marked as spam. Never pay a deposit before you have seen the flat and the contract.
 - **Your data stays on your computer.** Email text never leaves your Mac. The shared copy (if you use it) only gets statuses, notes and the page.
