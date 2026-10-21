@@ -3,7 +3,7 @@
 :root{--bg:#fff;--fg:#1d1d1f;--mut:#6b6b70;--line:#e4e4e7;--card:#f7f7f9;--acc:#2856d6;--accfg:#fff;--good:#1e6b34;--bad:#a32020;--warn:#8a5a00;--logbg:#111;--logfg:#d6d6da}
 @media (prefers-color-scheme:dark){:root{--bg:#151517;--fg:#ececf0;--mut:#9a9aa3;--line:#2c2c31;--card:#1d1d21;--acc:#7a9cff;--accfg:#111;--good:#8fd6a4;--bad:#f2a3a3;--warn:#f0c674;--logbg:#0c0c0e}}
 *{box-sizing:border-box}body{background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,system-ui,sans-serif;margin:0;padding:16px;max-width:900px;margin-inline:auto}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:10px}.tabs a{padding:5px 14px;border-radius:8px 8px 0 0;color:var(--mut)}
+.tabs{display:flex;gap:4px;overflow-x:auto;white-space:nowrap;border-bottom:1px solid var(--line);margin-bottom:10px}.tabs a{padding:5px 14px;border-radius:8px 8px 0 0;color:var(--mut)}
 .tabs a.on{background:var(--card);color:var(--fg);border:1px solid var(--line);border-bottom:none;margin-bottom:-1px}
 h1{font-size:20px;margin:0 0 2px}h2{font-size:15px;margin:0 0 8px}.sub{color:var(--mut);font-size:12px}a{color:var(--acc);font-weight:600;text-decoration:none}
 section{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px 14px;margin:12px 0}
@@ -23,7 +23,7 @@ pre{background:var(--logbg);color:var(--logfg);border-radius:8px;padding:10px;ma
 #msg{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}#msg.on{opacity:1}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-right:6px}.dot.run{background:var(--warn)}.dot.ok{background:var(--good)}.dot.err{background:var(--bad)}
 </style></head><body>
-<nav class="tabs"><a href="/">Listings</a><a href="/#marked">★ Marked</a><a href="/#map">🗺 Map</a><a href="/control" class="on">Control panel</a></nav>
+<nav class="tabs"><a href="/#next">▶ Next</a><a href="/">Listings</a><a href="/#marked">★ Marked</a><a href="/#map">🗺 Map</a><a href="/#today">🎉 Today</a><a href="/#pipeline">🗂 Pipeline</a><a href="/#visits">📅 Visits</a><a href="/control" class="on">Control panel</a></nav>
 <h1><img src="/icon.svg" width="30" height="30" alt="" style="vertical-align:-7px;border-radius:7px"> Nestbox <span class="sub" style="font-size:14px;font-weight:400">control panel</span></h1>
 <div class="sub">Everything here runs on your Mac. Keep the <code>serve.py</code> window open for automatic runs.</div>
 
