@@ -9,7 +9,11 @@ CSS = r"""
 /* toast with an action */
 #toast{display:flex;gap:10px;align-items:center}#toast.on{pointer-events:auto}#toast button{background:transparent;color:var(--bg);border:1px solid currentColor;border-radius:6px;padding:1px 10px;font-weight:700;cursor:pointer}
 .hitnote{font-size:12.5px;margin-top:3px;color:var(--okfg);background:var(--ok);border-radius:6px;padding:3px 8px}.hitnote b{font-weight:700}
-#top .tabs{flex-wrap:wrap;row-gap:4px}.tabs a{white-space:nowrap}#gsearch{margin-left:8px;flex:1 1 200px;max-width:340px;min-width:150px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}
+#top .tabs{flex-wrap:wrap;row-gap:4px}.tabs a{white-space:nowrap}.fmodal{position:fixed;inset:0;z-index:2050;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;padding:3vh 10px;overflow:auto}.fmodal .fbox2{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:14px;max-width:920px;width:100%;padding:8px 14px 16px}.fmodal .fhead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
+#gsdrop{position:fixed;z-index:2100;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.5);max-height:72vh;overflow:auto;width:min(540px,94vw);display:none}#gsdrop.on{display:block}
+.ddgrp{padding:8px 12px 2px;font-size:11.5px;text-transform:uppercase;color:var(--mut);letter-spacing:.05em}.ddrow{padding:7px 12px;cursor:pointer}.ddrow:hover,.ddrow.sel{background:var(--bg)}.ddrow .sub{font-size:12.5px;margin-top:1px}.ddrow mark{background:var(--warn);color:var(--warnfg);border-radius:3px;padding:0 1px}
+.ddmore{padding:2px 12px 6px;font-size:12px;color:var(--mut)}.ddall{padding:9px 12px;font-size:13px;color:var(--acc);cursor:pointer;border-top:1px solid var(--line)}.ddnone{padding:12px;color:var(--mut);font-size:13px}
+#gsearch{margin-left:8px;flex:1 1 200px;max-width:340px;min-width:150px;padding:5px 10px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:13px}
 .why{font-size:12.5px;margin-top:2px;color:var(--mut)}.why b.ok{color:var(--goodfg)}.why b.no{color:var(--badfg)}.why .chk{color:var(--warnfg)}
 #chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#chips .chip{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--acc);color:var(--acc);border-radius:14px;padding:2px 4px 2px 10px;font-size:12.5px;background:var(--card)}
 #chips .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;padding:0 6px;line-height:1}#chips .clear{font-size:12.5px}
@@ -84,7 +88,47 @@ function ensureSearch(){const qv=(F.q||'').trim();if(qv===_sAsked)return;_sAsked
  _sT=setTimeout(async()=>{try{const r=await fetch('/api/search?q='+encodeURIComponent(qv));if(!r.ok)return;const hits=await r.json();if((F.q||'').trim()!==qv)return;SEARCH={q:qv,hits};render()}catch(e){}},300)}
 const hitHtml=x=>{if(!F.q||SEARCH.q!==F.q.trim())return '';const h=(SEARCH.hits[x.id]||[]).find(k=>k.where!=='ad'&&k.text)||(SEARCH.hits[x.id]||[])[0];if(!h||!h.text)return '';return `<div class="hitnote">🔎 found in <b>${esc(h.where)}</b>: “${esc(h.text)}”</div>`};
 (function(){const r=q('run');if(r&&!q('gsearch')){const i=document.createElement('input');i.id='gsearch';i.type='search';i.placeholder='🔎 phone, email, address, word…';i.title='Finds a flat by its phone number, email address, street, a word from the ad, your notes or your mail. Press Enter to jump to the results.';r.insertAdjacentElement('afterend',i);
- i.addEventListener('input',()=>{q('f_q').value=i.value;if(view!=='all')location.hash='';changed()});i.addEventListener('keydown',e=>{if(e.key==='Enter'){const l=q('list');if(l)l.scrollIntoView()}})}})();
+ }})();
+// ---- search dropdown: results as you type, grouped by where they match; Enter opens the flat in a panel (you stay on your tab)
+const DM=new Map(D.map(x=>[x.id,x]));
+const GS={q:'',rows:[],sel:-1,seq:0,t:null};
+const GSG=[['phone','☎ Phone'],['flats','🏠 Flats (address, title, agency)'],['notes','📝 Your notes and history'],['mail','✉ Mail'],['desc','📄 Words in the ad']];
+function gsClose(){const d=q('gsdrop');if(d)d.classList.remove('on');GS.rows=[];GS.sel=-1}
+function gsHl(t,words){let s=esc(t);words.filter(w=>w.length>=2).forEach(w=>{s=s.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<mark>$1</mark>')});return s}
+function gsRun(){const inp=q('gsearch'),qv=inp.value.trim();if(qv.length<2){gsClose();return}GS.q=qv;const my=++GS.seq;gsRender(qv,{});
+ if(qv.length>=3)fetch('/api/search?q='+encodeURIComponent(qv)).then(r=>r.ok?r.json():{}).then(h=>{if(my===GS.seq)gsRender(qv,h)}).catch(()=>{})}
+function gsRender(qv,hits){const words=qv.toLowerCase().split(/\s+/).filter(Boolean),isPhone=/^[+\d\s./()-]{6,}$/.test(qv),n=isPhone?normPhone(qv):'',G={phone:[],flats:[],notes:[],mail:[],desc:[]},seen=new Set(),total=new Set();
+ const add=(g,x,line)=>{total.add(x.id);if(seen.has(x.id))return;seen.add(x.id);G[g].push({x,line})};
+ D.forEach(x=>{if(isPhone){const p=normPhone(x.phone||'');if(p&&n.length>=6&&(p.includes(n)||n.includes(p)))add('phone',x,'phone '+x.phone)}});
+ const MAP={phone:'phone',ad:'flats',agency:'flats','your note':'notes',history:'notes',mail:'mail',description:'desc',details:'desc'},ORDER=['phone','flats','notes','mail','desc'];
+ const items=[];Object.entries(hits).forEach(([id,hs])=>{const x=DM.get(id);if(!x)return;const best=hs.slice().sort((a,b)=>ORDER.indexOf(MAP[a.where]||'desc')-ORDER.indexOf(MAP[b.where]||'desc'))[0];items.push([x,MAP[best.where]||'desc',best])});
+ D.forEach(x=>{const base=(x.addr+' '+x.title+' '+x.agency+' '+x.id).toLowerCase();if(words.every(w=>base.includes(w)))items.push([x,'flats',{where:'ad',text:''}])});
+ items.forEach(([x,g,h])=>add(g,x,h.text?h.where+': '+h.text:''));
+ let html='',rows=[];GSG.forEach(([g,title])=>{const l=G[g].sort((a,b)=>b.x.score-a.x.score);if(!l.length)return;html+=`<div class="ddgrp">${title} (${l.length})</div>`;
+  l.slice(0,5).forEach(({x,line})=>{rows.push({id:x.id});html+=`<div class="ddrow" data-dd="${x.id}"><b>${gsHl(x.addr||x.title,words)}</b> <span class="sub">€${x.total} · ${esc(x.agency||x.source)}${(S[x.id]||{}).status&&(S[x.id]||{}).status!=='new'?' · '+esc((S[x.id]||{}).status):''}</span>${line?`<div class="sub">${gsHl(line,words)}</div>`:''}</div>`});
+  if(l.length>5)html+=`<div class="ddmore">+${l.length-5} more in this group</div>`});
+ const d=q('gsdrop');GS.rows=rows;GS.sel=-1;
+ d.innerHTML=(html||`<div class="ddnone">No flat found for “${esc(qv)}”${qv.length<3?'':' (searching the ads, notes and mail too…)'}</div>`)+(total.size?`<div class="ddall" data-ddall="1">Show all ${total.size} in the list ↵ (Enter with nothing selected)</div>`:'');
+ const r=q('gsearch').getBoundingClientRect(),w=Math.min(540,innerWidth-16);d.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+'px';d.style.top=(r.bottom+6)+'px';d.classList.add('on')}
+function gsSel(d){const el=[...q('gsdrop').querySelectorAll('.ddrow')];if(!el.length)return;GS.sel=(GS.sel+d+el.length)%el.length;el.forEach((e,i)=>e.classList.toggle('sel',i===GS.sel));el[GS.sel].scrollIntoView({block:'nearest'})}
+function gsApply(){const v=q('gsearch').value;q('f_q').value=v;if(view!=='all')location.hash='';changed();gsClose();const l=q('list');if(l)l.scrollIntoView()}
+// the panel that shows one flat, on top of whatever tab you are on
+let FM=null;
+function openFlat(id){const x=DM.get(id);if(!x)return;closeFlat();FM=id;gsClose();const el=document.createElement('div');el.className='fmodal';el.id='fmodal';
+ el.innerHTML=`<div class="fbox2"><div class="fhead"><span class="sub">The flat you searched for</span><span><button data-fm-list="${id}">Show in the list</button> <button id="fmClose">✕ Close</button></span></div><div id="fmBody">${card(x)}</div></div>`;document.body.appendChild(el);
+ el.addEventListener('click',e=>{if(e.target===el)closeFlat()});
+ const det=el.querySelector('details.desc');if(det)det.open=true}
+function closeFlat(){const e=document.getElementById('fmodal');if(e)e.remove();FM=null}
+const _renderFM=render;render=function(){_renderFM();if(FM){const b=document.getElementById('fmBody'),x=DM.get(FM);if(b&&x)b.innerHTML=card(x)}};
+(function(){const i=q('gsearch');if(!i)return;
+ i.addEventListener('input',()=>{clearTimeout(GS.t);GS.t=setTimeout(gsRun,120)});i.addEventListener('focus',()=>{if(i.value.trim().length>=2)gsRun()});
+ i.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();gsSel(1)}else if(e.key==='ArrowUp'){e.preventDefault();gsSel(-1)}
+  else if(e.key==='Enter'){e.preventDefault();if(GS.sel>=0&&GS.rows[GS.sel])openFlat(GS.rows[GS.sel].id);else gsApply()}else if(e.key==='Escape'){gsClose();i.blur()}});
+ const d=document.createElement('div');d.id='gsdrop';document.body.appendChild(d);
+ document.addEventListener('click',e=>{const row=e.target.closest('[data-dd]');if(row){openFlat(row.dataset.dd);return}if(e.target.closest('[data-ddall]')){gsApply();return}
+  const fl=e.target.closest('[data-fm-list]');if(fl){const id=fl.dataset.fmList;closeFlat();q('f_q').value=(DM.get(id)||{}).addr||'';location.hash='';changed();return}
+  if(e.target.id==='fmClose'){closeFlat();return}if(!e.target.closest('#gsdrop')&&e.target!==i)gsClose()});
+ addEventListener('keydown',e=>{if(e.key==='Escape')closeFlat()})})();
 // ---- quiet mode: no sound, voice, animation, pop-ups or visitors at all
 function applyQuiet(){const on=lsGet('quiet','0')==='1';document.body.classList.toggle('quiet',on);const b=q('quietBtn');if(b){b.textContent=on?'🔇 Quiet':'🔊 Fun';b.title=on?'Quiet mode is on: no sounds, voices, animations or pop-ups. Click to turn the fun back on.':'Click for quiet mode: stops all sounds, voices, animations and pop-ups.'}
  if(on){try{musicStop();speechSynthesis.cancel()}catch(e){}document.querySelectorAll('.vis,.fk,#sticker,.hoverjoke').forEach(e=>e.remove())}}
