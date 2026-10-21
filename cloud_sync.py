@@ -1,6 +1,6 @@
 """Publishes the listings page to the shared copy on Railway and keeps the notebook (marks, statuses, notes) in sync, both ways.
 
-Settings live in .env next to this file:  CLOUD_URL=https://....up.railway.app   CLOUD_TOKEN=<the owner's publish token>   CLOUD_OWNER=ali
+Settings live in .env next to this file:  CLOUD_URL=https://....up.railway.app   CLOUD_TOKEN=<the owner's publish token>   CLOUD_OWNER=you
 Nothing is sent unless CLOUD_URL and CLOUD_TOKEN are set. What is sent: the finished listings page and the listing descriptions (the text of the
 ads), over HTTPS to your own Railway service. Never sent: .env, the Gemini key, config.json, state.json, the run history.
 """
@@ -24,7 +24,7 @@ def settings():
         env[k] = os.environ.get(k) or env.get(k, "")
     if not (env["CLOUD_URL"].startswith("https://") and env["CLOUD_TOKEN"]):
         return None
-    return {"url": env["CLOUD_URL"].rstrip("/"), "token": env["CLOUD_TOKEN"], "owner": (env["CLOUD_OWNER"] or "ali").lower()[:20]}
+    return {"url": env["CLOUD_URL"].rstrip("/"), "token": env["CLOUD_TOKEN"], "owner": (env["CLOUD_OWNER"] or "owner").lower()[:20]}
 
 
 def _request(cfg, method, path, body=None, ctype="application/octet-stream", timeout=60, gz=False):

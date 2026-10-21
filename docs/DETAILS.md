@@ -308,7 +308,7 @@ Two options, use either:
 
 ## 🎉 Today tab (motivation)
 
-Open `/#today` (local or the shared copy). Today's 3 contacts picked by score (split between the two logins), one-tap call results, a 10-minute timer with optional hold music, streaks with a growing avatar, a team goal bar, rejection bingo, loot drops, a weekly league between the people sharing the search and a cheer button. Sounds are synthesised in the browser and voices use the browser's speech. Events, goal, prize and the uploaded pictures (your face, "no" and "yes" memes) live on the shared copy (`events.json`, `fun_settings.json`, `fun_*` pictures on the volume); the local page reaches them through `serve.py`. Settings (sound, voice, goal, daily count, prize, pictures) are in the "Fun settings" box at the bottom of the tab.
+See [FUN.md](FUN.md). Setting up the shared copy is in [SHARED_COPY.md](SHARED_COPY.md).
 
 ## Faster, politer scraping
 

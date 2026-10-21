@@ -64,7 +64,7 @@ Everything below is optional. Each one has a step-by-step in the control panel.
 |---|---|---|
 | **Gemini** | Double-checks tricky descriptions | A free API key in a `.env` file |
 | **Gmail link** | Replies show on the right flat | A Google Cloud OAuth client (10 minutes, read-only access) |
-| **Shared copy** | A friend sees the list and the notes | A small server (Railway works; see the notes) |
+| **Shared copy** | A friend sees the list and the notes; phone notifications; points and pictures for the fun layer | A small server. [Step-by-step for Railway](docs/SHARED_COPY.md) |
 | **Notifications** | Hourly nudges and the morning summary on your phone | The shared copy, and a browser that allows them |
 
 ## The honest bits
@@ -78,7 +78,11 @@ Everything below is optional. Each one has a step-by-step in the control panel.
 
 ## The fun layer, and the Quiet button
 
-There are sounds, spoken pep lines, memes, a pigeon, fake ads, sleepy faces and a leave-the-site guilt trip. It is meant to be funny with a friend and it has dark humor about being homeless, because that is where the author's head was. Everything is switchable in the "Fun settings", and the **🔊 Fun / 🔇 Quiet** button (or the `q` key) turns all of it off at once.
+Sounds, spoken pep lines, memes, streaks and a weekly league, a 10-minute "just start" timer, a pigeon that walks across your screen, fake ads, sleepy faces and a leave-the-site guilt trip. It is meant to be funny with a friend, and it has dark humor about being homeless, because that is where the author's head was. Your own face and memes can be uploaded (none are included).
+
+- It is **optional**, and the **🔊 Fun / 🔇 Quiet** button (or the `q` key) turns all of it off at once. Every part also has its own switch.
+- The points, streaks and pictures need the [shared copy](docs/SHARED_COPY.md); the toys work without it.
+- Everything it does is listed in [docs/FUN.md](docs/FUN.md).
 
 ## Keyboard
 
@@ -88,7 +92,7 @@ There are sounds, spoken pep lines, memes, a pigeon, fake ads, sleepy faces and 
 
 - Plain Python 3 standard library, no packages. One HTML page, no build step.
 - Run the tests: `python3 test_describe.py && python3 test_mail_link.py && python3 test_core.py`
-- The technical notes (how scoring works, files, settings, deploying the shared copy) are in [docs/DETAILS.md](docs/DETAILS.md).
+- The technical notes (how scoring works, files, settings) are in [docs/DETAILS.md](docs/DETAILS.md). Sharing with a friend: [docs/SHARED_COPY.md](docs/SHARED_COPY.md). The fun layer: [docs/FUN.md](docs/FUN.md).
 - Bugs and ideas are welcome, no promises. 🐦
 
 ## License
