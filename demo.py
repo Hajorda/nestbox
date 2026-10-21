@@ -82,7 +82,9 @@ def build():
     json.dump({"msgs": {"d1": {"t": "T1", "from": "Marie Dupont <marie@demo-immo.example>", "to": "alex@example.com", "subject": "Re: Viewing request", "date": ago(0, 8), "snippet": "Hello, yes the flat is still free. Would Friday at 18:00 work for a viewing?",
                                "mine": False, "strong": True, "lids": [ids[1]], "scam": False},
                         "d2": {"t": "T2", "from": "Jan Peeters <jan@demo-immo.example>", "to": "alex@example.com", "subject": "Re: Bezichtiging", "date": ago(0, 7), "snippet": "Goedemorgen, de woning is helaas al verhuurd.",
-                               "mine": False, "strong": True, "lids": [ids[4]], "scam": False}}, "manual": {}, "me": "alex@example.com", "last_poll": 0, "error": ""}, open(os.path.join(DEST, "mail.json"), "w"))
+                               "mine": False, "strong": True, "lids": [ids[4]], "scam": False},
+                        "d3": {"t": "T3", "from": "Evan Mercurio <mercurio040904@gmail.com>", "to": "alex@example.com", "subject": "Re: Immoweb - Interest in a To rent ad", "date": ago(0, 6),
+                               "snippet": "Dear Customer, Welcome to HousingAnywhere! We are excited to help you find the perfect furnished rental quickly and easily.", "mine": False, "strong": True, "lids": [ids[3]], "scam": True}}, "manual": {}, "me": "alex@example.com", "last_poll": 0, "error": ""}, open(os.path.join(DEST, "mail.json"), "w"))
     r = subprocess.run([sys.executable, "scraper.py", "--offline", "--no-cloud", "--no-ai"], cwd=DEST, capture_output=True, text=True)
     if not os.path.exists(os.path.join(DEST, "listings.html")):
         sys.exit("could not build the demo page:\n" + r.stderr[-800:])

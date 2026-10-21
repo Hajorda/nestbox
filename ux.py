@@ -46,6 +46,7 @@ body.nextv #nextview~*, body.pipev #pipeview~*{}
 .vrow .t{font:700 17px ui-monospace,Menlo,monospace;min-width:56px}.vrow .what{flex:1;min-width:200px}
 @media (max-width:700px){
  body{padding-left:10px;padding-right:10px}
+ #top{position:static}#top .tabs{flex-wrap:nowrap}
  .tabs{overflow-x:auto;white-space:nowrap;padding-bottom:0;-webkit-overflow-scrolling:touch}.tabs a{padding:9px 12px}#run{display:none}
  button,select,input[type=number],input[type=search],input[type=text],input[type=date],.btn{min-height:40px;font-size:15px}
  .card{grid-template-columns:44px minmax(0,1fr);padding:10px}.card>*{grid-column:1/-1!important;min-width:0}.card>.score{grid-column:1!important}.card>div:nth-child(2){grid-column:2/-1!important}
@@ -134,6 +135,10 @@ const _renderFM=render;render=function(){_renderFM();if(FM){const b=document.get
 const contactHtml=x=>{const e=x.emails||[],p=x.phones2||[];if(!e.length&&!p.length)return '';
  return `<div class="contactline">📇 <span class="sub">in the ad:</span> ${e.map(a=>`<span><b>${esc(a)}</b> <button data-copy="${esc(a)}" title="Copy">copy</button> <a class="btn" href="${gmailUrl(x,a)}" target="_blank" rel="noopener" data-gm="${x.id}" title="Opens Gmail with this address already in To:">✉ write</a></span>`).join('')}${p.map(t=>`<span><b>${esc(t)}</b> <button data-copy="${esc(t)}">copy</button> <a class="btn" href="tel:${esc(t.replace(/[^\d+]/g,''))}">☎ call</a></span>`).join('')}</div>`};
 document.addEventListener('click',async e=>{const c=e.target.closest('[data-copy]');if(c){try{await navigator.clipboard.writeText(c.dataset.copy);toast('Copied: '+c.dataset.copy)}catch(x){toast('Copy failed: select it by hand')}}});
+// on a phone the search bar gets its own row under the tabs
+(function(){const i=q('gsearch'),top=q('top');if(!i||!top)return;const mq=matchMedia('(max-width:700px)');
+ const place=()=>{if(mq.matches){if(!q('gswrap')){const w=document.createElement('div');w.id='gswrap';w.style.cssText='padding:6px 0';top.appendChild(w)}q('gswrap').appendChild(i);i.style.cssText='width:100%;max-width:none;margin:0;box-sizing:border-box;flex:none'}
+  else if(q('gswrap')&&q('gswrap').contains(i)){q('run').insertAdjacentElement('afterend',i);i.style.cssText='';q('gswrap').remove()}};place();mq.addEventListener('change',place)})();
 // ---- quiet mode: no sound, voice, animation, pop-ups or visitors at all
 function applyQuiet(){const on=lsGet('quiet','0')==='1';document.body.classList.toggle('quiet',on);const b=q('quietBtn');if(b){b.textContent=on?'🔇 Quiet':'🔊 Fun';b.title=on?'Quiet mode is on: no sounds, voices, animations or pop-ups. Click to turn the fun back on.':'Click for quiet mode: stops all sounds, voices, animations and pop-ups.'}
  if(on){try{musicStop();speechSynthesis.cancel()}catch(e){}document.querySelectorAll('.vis,.fk,#sticker,.hoverjoke').forEach(e=>e.remove())}}
