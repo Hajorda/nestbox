@@ -66,6 +66,8 @@ Everything the control panel does can also be done from a terminal:
 python3 scraper.py                 # normal run
 python3 scraper.py --offline       # re-score saved listings, no requests to listing sites (Gemini still runs)
 python3 scraper.py --details 260   # read up to 260 listing pages this run (default from config.json, ~3 s each)
+python3 scraper.py --fast          # quick check: newest page of each area only, reads and scores brand-new flats
+python3 scraper.py --read-only --details 300   # no searching: just read unread listing pages, best first
 python3 scraper.py --no-ai         # skip Gemini
 python3 scraper.py --no-details    # skip reading listing pages
 python3 scraper.py --notify        # macOS notification for new high-score flats
@@ -143,7 +145,7 @@ Each card shows what the listing really costs, not just the rent. Listing data a
 - **Show more**: the list loads 50 flats at a time and more load automatically as you scroll, or press "Show 50 more" / "Show all". If the page hits an error it shows a red line at the top.
 
 ### Map
-The **🗺 Map** tab (address `/#map`) draws the flats that match your filters on the Listings tab as pins on an OpenStreetMap map, with EUROCONTROL (black ring) and the tram 62 stops (grey dots).
+The **🗺 Map** tab (address `/#map`) draws the flats that match your filters on the Listings tab as pins on an OpenStreetMap map, with EUROCONTROL (black ring) and the tram and bus lines that go there directly (tram 62, bus 12, bus 21, drawn from OpenStreetMap data in `data/transit.json`; `python3 build_transit.py` refreshes it). Tick "only flats within 500 m of a stop" to keep only flats on those lines.
 Colour the pins by match score or by value points (green best, blue very good, orange okay, red weak); a gold ring marks ★ flats; click a pin for price, real cost, commute, key tags and a mark button.
 Pins with a **pale dashed** look have only an approximate position (the centre of their area, spread a little so they do not stack) because the listing gave no exact location; untick "include approximate positions" to see only exact ones.
 It needs an internet connection: the page loads Leaflet 1.9.4 from cdnjs (checked with an integrity hash, so only that exact file runs) and the map tiles from openstreetmap.org (light personal use is fine under their policy; attribution is shown on the map).
@@ -240,8 +242,8 @@ Two options, use either:
 
 ## Being a polite visitor (please keep it this way)
 
-- Only public search and listing pages that each site's `robots.txt` allows; price and sort filters are applied on your computer instead.
-- One request at a time, 2-4 seconds apart, a few hundred requests per run at most. 2-4 runs a day is plenty.
+- Only public search and listing pages. Since the quick-check and budget-filter changes it uses the price filter and newest-first sorting in the search addresses, which some sites' `robots.txt` (Immoweb, Immovlan) asks crawlers not to use. That is a choice for personal use, at your own risk; remove `max_price=` from the searches in `scraper.py` and the `orderBy` part in `sources.py` to go back.
+- One request at a time, 2-4 seconds apart, a few hundred requests per full run at most. 2-4 full runs a day is plenty; the hourly quick check is only about 30 search requests plus the new flats' pages. If a site starts blocking, turn the quick check off in the control panel.
 - On the first 403 or 429 response the site is skipped for the rest of the run. If you see a block, wait a day.
 - Phone numbers are read only where the page already contains them. Nothing hidden behind a "show number" button is revealed.
 - Sites' terms of use may still restrict automated access. This is a low-volume personal tool; use it that way, and do not share or resell the data.
@@ -360,3 +362,10 @@ Setup, once (also written in the control panel, "Gmail link"):
 - **Morning summary:** a notification each morning (default 08:30, while the server runs; if the Mac was asleep, as soon as it wakes) with the number of replies, viewings, follow-ups and new good flats. Switch it off or change the time in the control panel; "Send one now" tests it. With the shared copy and notifications on, it also goes to your phone or browser.
 - **🏠 I found a flat:** on a flat's card, "this is the one". Searching, follow-up reminders, the morning summary and the hourly reminders stop; the other flats are archived (shown only if you ask), and nothing is deleted. "Resume searching" undoes it.
 - **Scam hint:** a reply from a free-mail address (gmail, outlook...) that talks like a rental platform ("Welcome to HousingAnywhere") is marked "spam". Marketing and welcome emails from platforms are ignored when matching replies.
+
+## Finding good flats faster
+
+- **Only flats you can afford:** the Immoweb and Immovlan searches ask for flats up to your budget, newest first. Immoweb only lets us read about 120 flats per area; before this, that cap was mostly filled with flats over budget.
+- **Unread flats first, best first:** the order is score, plus a bonus for furnished flats and for a commute of 30 minutes or less. When more than twice the usual number are unread, a run reads up to `backlog_pages_per_run` (250) pages instead of `detail_pages_per_run` (100).
+- **⭐ Shortlist view:** within budget, no deal-breaker, text read, and furnished, short stay OK or registration OK; sorted by value points, commute 35 minutes or less. Use it as the list to act on.
+- **Quick check** (`--fast`, control panel: Schedule > quick check, default every hour in the active hours, 30 minutes at the fastest): searches only the newest page of each area on Immoweb and Immovlan plus the private ads, reads the pages of flats it has never seen (up to `fast_reads_per_run`, 30), scores them and sends a notification for strong new ones, once per flat. It never marks a flat as taken and does not change the "normal count" the health bar compares with.

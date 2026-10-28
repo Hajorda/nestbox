@@ -37,3 +37,4 @@ cloud/describe.py
 *.plist
 video_out/
 cloud/search.py
+notified.json

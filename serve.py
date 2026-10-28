@@ -38,6 +38,7 @@ ALLOWED = {"new", "contacted", "replied", "visit", "applied", "rejected"}
 HOSTS = {f"127.0.0.1:{PORT}", f"localhost:{PORT}"}
 MANUAL_COOLDOWN = 300          # seconds between two online runs started by hand
 MIN_EVERY_MINUTES = 120        # fastest allowed automatic interval
+MIN_FAST_MINUTES = 30          # fastest allowed quick check (newest page only)
 
 NUM = {"budget": (300, 5000), "min_m2": (0, 200), "pages_per_area": (1, 4), "max_pages_per_area": (1, 6), "new_days": (1, 30), "max_late_days": (1, 365), "furnished_pages_per_area": (0, 3),
        "detail_pages_per_run": (0, 300), "ai_per_run": (0, 200), "read_max_minutes": (10, 120), "notify_min_score": (0, 150),
@@ -162,7 +163,7 @@ def running():
 
 def build_args(o):
     args = []
-    for flag in ("offline", "read_only", "no_ai", "no_details", "notify"):
+    for flag in ("offline", "read_only", "no_ai", "no_details", "notify", "fast"):
         if o.get(flag) is True:
             args.append("--" + flag.replace("_", "-"))
     for key in ("prioritise", "recheck"):
@@ -207,7 +208,9 @@ def start_run(options, source):
                                          stderr=subprocess.STDOUT, env=env), started=time.time(), finished=None, code=None, source=source, args=args)
         if not offline:
             sched = read_json(SCHEDULE_FILE, {})
-            sched["last_run_ts"] = time.time()
+            sched["last_fast_ts"] = time.time()
+            if "--fast" not in args:                              # a quick check does not reset the timer of the full run
+                sched["last_run_ts"] = time.time()
             write_json(SCHEDULE_FILE, sched)
             JITTER[0] = random.randint(0, 600)
     threading.Thread(target=watch, daemon=True).start()
@@ -360,7 +363,8 @@ def gemini_stats():
 def get_schedule():
     s = read_json(SCHEDULE_FILE, {})
     out = {"enabled": bool(s.get("enabled")), "every_minutes": s.get("every_minutes", 360), "start_hour": s.get("start_hour", 7),
-           "end_hour": s.get("end_hour", 23), "notify": s.get("notify", True), "ai": s.get("ai", True), "min_every_minutes": MIN_EVERY_MINUTES}
+           "end_hour": s.get("end_hour", 23), "notify": s.get("notify", True), "ai": s.get("ai", True), "min_every_minutes": MIN_EVERY_MINUTES,
+           "fast_every_minutes": s.get("fast_every_minutes", 60), "min_fast_minutes": MIN_FAST_MINUTES}
     if out["enabled"]:
         out["next_run_ts"] = max(s.get("last_run_ts", 0) + out["every_minutes"] * 60 + JITTER[0], s.get("paused_until", 0))
     return out
@@ -375,6 +379,11 @@ def apply_schedule(body):
                 if not isinstance(body[k], int) or isinstance(body[k], bool) or not lo <= body[k] <= hi:
                     return f"{k} must be a whole number between {lo} and {hi}", None
                 s[k] = body[k]
+        if "fast_every_minutes" in body:                       # 0 = no quick checks
+            f = body["fast_every_minutes"]
+            if not isinstance(f, int) or isinstance(f, bool) or not (f == 0 or MIN_FAST_MINUTES <= f <= 720):
+                return f"fast_every_minutes must be 0 (off) or between {MIN_FAST_MINUTES} and 720", None
+            s["fast_every_minutes"] = f
         for k in ("enabled", "notify", "ai"):
             if k in body:
                 if not isinstance(body[k], bool):
@@ -594,6 +603,8 @@ def scheduler_loop():
                 continue
             if time.time() >= s.get("last_run_ts", 0) + s.get("every_minutes", 360) * 60 + JITTER[0]:
                 start_run({"notify": s.get("notify", True), "no_ai": not s.get("ai", True)}, "schedule")
+            elif s.get("fast_every_minutes", 60) and time.time() >= s.get("last_fast_ts", s.get("last_run_ts", 0)) + s.get("fast_every_minutes", 60) * 60 + JITTER[0] // 4:
+                start_run({"fast": True, "notify": s.get("notify", True), "no_ai": not s.get("ai", True)}, "fast")
         except Exception as e:                  # the scheduler must never die
             print("scheduler:", e, file=sys.stderr)
 

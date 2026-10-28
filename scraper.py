@@ -22,6 +22,7 @@ import firstrun, gemini, messages, progress as prog, report, scoring, sources
 HERE = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(HERE, "state.json")
 HISTORY = os.path.join(HERE, "history.json")
+NOTIFIED = os.path.join(HERE, "notified.json")        # flats already announced by a notification: {id: date}
 MANUAL = os.path.join(HERE, "manual.json")          # listings you added by link: {id: item}, merged into the catalog on every run
 LOGDIR = os.path.join(HERE, "logs")
 REQ = {}
@@ -84,7 +85,7 @@ def fingerprint(c):
 TL = threading.local()                                       # requests made by the current search thread (the progress estimate needs a per-site count)
 
 
-def collect(cfg, blocked):
+def collect(cfg, blocked, fast=False):
     """Run all searches, the five sites side by side: each site is one thread that works through its own searches one request at a time
     (same politeness as before), so the total is about the slowest site instead of the sum of all of them.
     Returns (items, searched) where searched[(source, area)] = number of results."""
@@ -107,6 +108,9 @@ def collect(cfg, blocked):
         add("spotahome", "", "spotahome brussels", sources.spotahome_search, cfg.get("spotahome_pages", 2), planned=cfg.get("spotahome_pages", 2))
     add("2ememain", "", "2ememain private ads", sources.ememain_search, 3, scoring.EUROCONTROL, 15, scoring.km, planned=6)
 
+    if fast:                                                 # the quick check: newest page of Immoweb / Immovlan and the private ads, nothing else
+        jobs = [(src, area, label, fn, (*args[:2], 1, *args[3:]) if src in ("immoweb", "immovlan") else args, {k: v for k, v in kw.items() if k != "max_pages"}, 1)
+                for (src, area, label, fn, args, kw, _planned) in jobs if src in ("immoweb", "immovlan", "2ememain") and not kw.get("furnished")]
     out = [None] * len(jobs)
     lock = threading.Lock()
 
@@ -172,7 +176,7 @@ def source_health(state, searched, blocked, path=None):
     return {k: v["status"] for k, v in health.items() if v["status"] != "ok"}
 
 
-def update_catalog(state, fresh, searched, blocked, today):
+def update_catalog(state, fresh, searched, blocked, today, misses=True):
     """Merge this run into the catalog and count how many runs each missing listing has been absent.
     A listing only counts as missed when its source was not blocked and its area search returned results
     (so a dropped wifi connection or a block never marks everything as taken)."""
@@ -186,7 +190,7 @@ def update_catalog(state, fresh, searched, blocked, today):
         base = {k: v for k, v in it.items() if k not in DERIVED}
         cat[it["id"]] = {**cat.get(it["id"], {}), **base, "last_seen": today, "seen_at": datetime.now().isoformat(timespec="minutes"), "missed": 0, "missed_at": 0}
         cat[it["id"]].setdefault("first_at", cat[it["id"]]["seen_at"])
-    for lid, c in cat.items():
+    for lid, c in (cat.items() if misses else ()):             # a quick check only sees the newest page, so it can never tell that a flat is gone
         if lid not in ids and not c.get("manual") and c["source"] not in blocked and searched.get((c["source"], c.get("area", "")), 0) > 0:
             if time.time() - c.get("missed_at", 0) >= 6 * 3600:        # one miss per 6 hours at most: several runs in an hour must not mark a flat "taken"
                 c["missed"], c["missed_at"] = c.get("missed", 0) + 1, time.time()
@@ -198,6 +202,12 @@ def update_catalog(state, fresh, searched, blocked, today):
     return st
 
 
+def read_priority(it):
+    """Which unread page to open first: the flats most likely to be worth it (score already holds price, commute and freshness), plus the things the
+    text cannot change much: furnished flats suit a short stay, and a short commute is always wanted."""
+    return -(it["score"] + (10 if it.get("furnished") else 0) + (5 if (it["minutes"] or 99) <= 30 else 0))
+
+
 def _main(S):
     ap = argparse.ArgumentParser()
     ap.add_argument("--max", type=int, help="budget incl. charges (default: config.json)")
@@ -207,6 +217,7 @@ def _main(S):
     ap.add_argument("--no-ai", action="store_true")
     ap.add_argument("--ai", type=int, help="Gemini analyses this run (default: config.json)")
     ap.add_argument("--notify", action="store_true")
+    ap.add_argument("--fast", action="store_true", help="quick check: only the newest page of each area; reads and scores the brand-new flats (no misses counted)")
     ap.add_argument("--no-cloud", action="store_true", help="do not publish the page to the shared copy after this run")
     ap.add_argument("--prioritise", help="comma-separated listing ids that Gemini should check first")
     ap.add_argument("--read-only", action="store_true", help="skip the searches and only read listing pages (and run Gemini), best candidates first")
@@ -222,6 +233,8 @@ def _main(S):
     if read_only:
         a.offline = True                                   # no searches; reading pages below is still allowed
         S["read_only"] = True
+    if a.fast and a.offline:
+        a.fast = False                                     # a quick check without searching is just an offline run
     S["args"], S["offline"] = sys.argv[1:], a.offline
 
     firstrun.ensure_config()                                  # a fresh download has only config.example.json
@@ -258,11 +271,11 @@ def _main(S):
     for lid in recheck:
         state["ai"].pop(lid, None)                         # force a fresh Gemini read of the new text
     first_run = state.setdefault("first_run", min(state["seen"].values(), default=today))
-    blocked = set()
+    blocked, new_ids = set(), set()
     global PROGRESS
-    n_read = len(recheck) if recheck else 0 if ((a.offline and not read_only) or a.no_details) else (a.details if a.details is not None else cfg["detail_pages_per_run"])
+    n_read = len(recheck) if recheck else cfg.get("fast_reads_per_run", 30) if a.fast else 0 if ((a.offline and not read_only) or a.no_details) else (a.details if a.details is not None else cfg["detail_pages_per_run"])
     n_ai = 0 if a.no_ai else cfg["ai_per_run"] if gemini.api_key() else 0
-    PROGRESS = prog.Progress({"search": 0 if a.offline else planned_requests(cfg), "read": n_read, "ai": n_ai, "build": 1})
+    PROGRESS = prog.Progress({"search": 0 if a.offline else (len(cfg.get("enabled_areas") or cfg["areas"]) * 2 + 3 if a.fast else planned_requests(cfg)), "read": n_read, "ai": n_ai, "build": 1})
     REQ.clear()
 
     def count_request():                                  # every finished request: progress bar + the per-run request counter
@@ -272,10 +285,13 @@ def _main(S):
     sources.REQUEST_HOOK = count_request
     if not a.offline:
         PROGRESS.stage("search")
-        fresh, searched = collect(cfg, blocked)
+        known = set(state["catalog"])
+        fresh, searched = collect(cfg, blocked, fast=a.fast)
+        new_ids = {it["id"] for it in fresh if it["id"] not in known}
         S["found"], S["found_by_source"] = len(fresh), dict(Counter(it["source"] for it in fresh))
-        S["catalog"] = update_catalog(state, fresh, searched, blocked, today)
-        S["source_health"] = source_health(state, searched, blocked)
+        S["catalog"] = update_catalog(state, fresh, searched, blocked, today, misses=not a.fast)
+        if not a.fast:                                         # a quick check returns far fewer listings on purpose: it must not change what "normal" is
+            S["source_health"] = source_health(state, searched, blocked)
 
     all_items = [dict(c) for c in state["catalog"].values()]
     for it in all_items:
@@ -325,7 +341,7 @@ def _main(S):
         fails[it["id"]] = {"n": f["n"] + 1, "last": date.today().isoformat(), "sfp": fingerprint(cat.get(it["id"], it))}
     cached_ok = sum(1 for it in candidates if it["id"] in state["details"] and not (stale_geo(it) or need_created(it) or need_specs(it) or changed(it)))
     unread = sorted((it for it in candidates if (it["id"] not in state["details"] and not backed_off(it)) or stale_geo(it) or need_created(it) or need_specs(it) or changed(it)),
-                    key=lambda it: -it["score"])
+                    key=read_priority)
     S["reads_skipped"] = cached_ok
     S["reads_changed"] = sum(1 for it in candidates if changed(it))
     S["reads_backed_off"] = sum(1 for it in candidates if it["id"] not in state["details"] and backed_off(it))
@@ -333,7 +349,15 @@ def _main(S):
     gemini.USAGE.update(ok=0, failed=0, tokens_in=0, tokens_out=0)
     streamed = 0                                           # analyses already done by the background stream while pages were being read
     if recheck or read_only or not (a.offline or a.no_details):
-        batch = [it for it in items if it["id"] in recheck and it["source"] in READERS] if recheck else unread[: a.details if a.details is not None else cfg["detail_pages_per_run"]]
+        if recheck:
+            batch = [it for it in items if it["id"] in recheck and it["source"] in READERS]
+        elif a.fast:                                       # only what just appeared, so the quick check stays quick
+            batch = [it for it in unread if it["id"] in new_ids][: cfg.get("fast_reads_per_run", 30)]
+        else:
+            size = a.details if a.details is not None else cfg["detail_pages_per_run"]
+            if a.details is None and len(unread) > 2 * size:           # a big backlog of unread flats: clear it faster (still one request at a time per site)
+                size = max(size, cfg.get("backlog_pages_per_run", 250))
+            batch = unread[:size]
         PROGRESS.stage("read", total=len(batch))
         S["read_attempted"] = len(batch)
         print(f"\nlisting pages to read: {len(batch)} of {len(unread)} unread candidates (best first); {S['reads_skipped']} cached pages unchanged and skipped, {S['reads_changed']} changed since the last read, {S['reads_backed_off']} failing pages waiting before a retry")
@@ -385,7 +409,8 @@ def _main(S):
     if not a.no_ai:                                    # also in --offline: Gemini is not a listing site
         for it in items:
             scoring.analyse(it, cfg)
-        ranked = sorted((it for it in items if it.get("description") and ((not it["gone"] and it.get("total", it["rent"]) <= cfg["budget"]) or it["id"] in prio)), key=lambda it: (it["id"] not in prio, -it["score"]))
+        ranked = sorted((it for it in items if it.get("description") and ((not it["gone"] and it.get("total", it["rent"]) <= cfg["budget"]) or it["id"] in prio)
+                         and (not a.fast or it["id"] in new_ids)), key=lambda it: (it["id"] not in prio, -it["score"]))        # a quick check only analyses what it just found
         gemini.run(ranked, state["ai"], cfg, cfg["ai_per_run"] - streamed, progress=PROGRESS, already=streamed)       # what is left of the allowance, best first
         price = cfg.get("gemini_price") or {}
         u = gemini.USAGE
@@ -442,13 +467,18 @@ def _main(S):
     for it in good[:15]:
         print(f"{it['score']:6} €{it['total']:<5} ~{it['minutes']}min {it['locality'][:16]:16} {'ok' if it['verified'] else 'unread':6} {','.join(it['flags'])[:30]:30} {it['url']}")
     if a.notify and not a.offline:
-        hot = [it for it in good if it["new"] and it["score"] >= cfg["notify_min_score"] and it["verified"]]
+        told = load_json(NOTIFIED, {})                      # every flat is announced once, however many runs it stays "new"
+        hot = [it for it in good if it["new"] and it["score"] >= cfg["notify_min_score"] and it["verified"] and it["id"] not in told]
         if hot:
+            told.update({it["id"]: today for it in hot})
+            cutoff = (date.fromisoformat(today) - timedelta(days=30)).isoformat()
+            with open(NOTIFIED, "w") as f:
+                json.dump({k: v for k, v in told.items() if v >= cutoff}, f)
             best = hot[0]
             notify(f"{len(hot)} new flat(s) in budget", f"Best: €{best['total']} {best['locality']} ~{best['minutes']} min, score {best['score']}")
     if a.notify and not a.offline and followups_due():
         notify(f"{followups_due()} follow-up(s) due", "Contacted flats with no reply. Open the Listings page to send a reminder.")
-    if not a.no_cloud:                                     # the shared copy for your friend: publish the new page, reconcile marks and notes
+    if not a.no_cloud and not (a.fast and not new_ids):    # the shared copy for your friend: publish the new page, reconcile marks and notes
         try:
             import cloud_sync
             S["cloud"] = cloud_sync.publish()

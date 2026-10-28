@@ -428,13 +428,13 @@ shared:'A room in a shared flat or co-living, not a whole flat.',check_scam:'Und
 stay_ok:'Short stays are accepted or the minimum lease fits your stay.'};
 const hintEl=k=>HINTS[k]?`<span class="hint" tabindex="0" data-hint="${esc(HINTS[k])}">?</span>`:'';
 function fillHints(root=document){root.querySelectorAll('[data-h]').forEach(e=>{const t=HINTS[e.dataset.h];if(t){e.className='hint';e.tabIndex=0;e.textContent='?';e.dataset.hint=t}})}
-const FLAGS=[['manual','Manually added'],['marked','Marked ★'],['wrong','Marked wrong by me'],['laundry_machine','Washing machine in the flat'],['furnished','Furnished'],['stay_ok','Short stay OK'],['domicile_ok','Registration allowed'],['fridge','Fridge / equipped kitchen'],['ask_lease','Ask about lease length'],['verified','Listing text read'],['ai','Checked by Gemini'],['new','New (last '+NEWDAYS+' days)']];
+const FLAGS=[['manual','Manually added'],['marked','Marked ★'],['wrong','Marked wrong by me'],['laundry_machine','Washing machine in the flat'],['furnished','Furnished'],['stay_ok','Short stay OK'],['domicile_ok','Registration allowed'],['fridge','Fridge / equipped kitchen'],['ask_lease','Ask about lease length'],['shortlist','Shortlist: text read + furnished, short stay or registration OK'],['verified','Listing text read'],['ai','Checked by Gemini'],['new','New (last '+NEWDAYS+' days)']];
 const DEF={q:'',pmin:'',pmax:'',beds:'any',m2:'',commute:'45',score:'',value:'',eff:'',avail:'',upd:'',status:'',area:[],src:[],flags:[],good:true,gone:true,rej:true,since:false,sort:'score',dir:'desc'};
 const NATDIR={value:'desc',effective:'asc',score:'desc',total:'asc',minutes:'asc',m2:'desc',ppm2:'asc',newest:'desc',updated:'desc',avail:'asc',beds:'desc'};
-const VIEWS=[['Best matches',{}],['Best value',{sort:'value',dir:'desc'}],['Lowest real cost',{sort:'effective',dir:'asc'}],['Cheapest',{sort:'total',dir:'asc'}],['Short stay OK',{flags:['stay_ok']}],['Ask about lease length',{flags:['ask_lease'],sort:'total',dir:'asc'}],['Closest to work',{sort:'minutes',dir:'asc'}],['Furnished up to €1000',{flags:['furnished'],pmax:'1000',sort:'total',dir:'asc'}],['New listings',{flags:['new'],sort:'newest',dir:'desc'}],['Recently updated',{sort:'updated',dir:'desc'}]];
+const VIEWS=[['Best matches',{}],['⭐ Shortlist (read, ≤35 min)',{flags:['shortlist'],commute:'35',sort:'value',dir:'desc'}],['Best value',{sort:'value',dir:'desc'}],['Lowest real cost',{sort:'effective',dir:'asc'}],['Cheapest',{sort:'total',dir:'asc'}],['Short stay OK',{flags:['stay_ok']}],['Ask about lease length',{flags:['ask_lease'],sort:'total',dir:'asc'}],['Closest to work',{sort:'minutes',dir:'asc'}],['Furnished up to €1000',{flags:['furnished'],pmax:'1000',sort:'total',dir:'asc'}],['New listings',{flags:['new'],sort:'newest',dir:'desc'}],['Recently updated',{sort:'updated',dir:'desc'}]];
 let F={...DEF},LIMIT=50;try{F={...DEF,...JSON.parse(localStorage.getItem('filters')||'{}')}}catch(e){}
 const areaKey=x=>((x.postal||'')+' '+(x.locality||'')).trim();
-const has=(x,k)=>k==='verified'?x.verified:k==='ai'?x.ai:k==='new'?x.new:k==='manual'?x.manual:k==='marked'?!!(S[x.id]||{}).marked:k==='wrong'?!!(S[x.id]||{}).wrong:x.flags.includes(k);
+const has=(x,k)=>k==='shortlist'?!!(x.verified&&['furnished','stay_ok','domicile_ok'].some(f=>x.flags.includes(f))):k==='verified'?x.verified:k==='ai'?x.ai:k==='new'?x.new:k==='manual'?x.manual:k==='marked'?!!(S[x.id]||{}).marked:k==='wrong'?!!(S[x.id]||{}).wrong:x.flags.includes(k);
 const ACTIVE=['contacted','replied','visit','applied'];
 function matches(x){const s=st(x),n=v=>v===''||v==null?null:+v;
  if(!x.manual){if(F.good&&!x.good)return false;if(F.gone&&x.gone&&!ACTIVE.includes(s))return false;if(F.rej&&s==='rejected'&&F.status!=='rejected')return false}
@@ -454,7 +454,7 @@ function sorted(L){const f=VAL[F.sort],d=F.dir==='asc'?1:-1;return L.sort((a,b)=
 function buildFilters(){const cnt=(f)=>{const m={};D.forEach(x=>{const k=f(x);m[k]=(m[k]||0)+1});return Object.entries(m).sort((a,b)=>b[1]-a[1])};
  q('f_area').innerHTML=cnt(areaKey).map(([k,n])=>`<option value="${esc(k)}">${esc(k||'unknown')} (${n})</option>`).join('');
  q('f_src').innerHTML=cnt(x=>x.source).map(([k,n])=>`<label><input type="checkbox" data-src="${esc(k)}"> ${badge(D.find(x=>x.source===k))}${esc((SRC[k]||[0,0,k])[2])} (${n})</label>`).join('');
- const FH={verified:HINTS.t_read,ai:HINTS.t_ai,new:HINTS.t_new,...TAGHINT};
+ const FH={shortlist:'The flats worth your time first: within budget, no deal-breaker, the full text was read, and it is furnished, accepts a short stay or allows address registration. Combine it with the commute filter.',verified:HINTS.t_read,ai:HINTS.t_ai,new:HINTS.t_new,...TAGHINT};
  q('f_flags').innerHTML='<div>'+FLAGS.map(([k,l])=>`<label><input type="checkbox" data-flag="${k}"> ${l}${FH[k]?` <span class="hint" tabindex="0" data-hint="${esc(FH[k])}">?</span>`:''}</label>`).join('')+'</div>';
  q('f_src').innerHTML='<div>'+q('f_src').innerHTML+'</div>';
  q('views').innerHTML=VIEWS.map(([l,o],i)=>`<button data-view="${i}">${l}</button>`).join('')}

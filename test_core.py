@@ -1,7 +1,8 @@
 """Tests for the parts that are not keyword reading: message templates, first-run setup, source health, merging the notebooks and the demo build.
 Run: python3 test_core.py"""
 import json, os, shutil, subprocess, sys, tempfile
-import cloud_sync, firstrun, messages
+import cloud_sync, firstrun, messages, sources
+from datetime import date
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 cfg = json.load(open(os.path.join(HERE, "config.example.json")))
@@ -106,4 +107,34 @@ for blobs in ([_one], [_old]):
     finally:
         sources.fetch, sources.pause = _fetch, _pause
     assert [g["id"] for g in got] == ["iv-vbe1"] and got[0]["rent"] == 900, got
+
+# quick check: only page 1 of Immoweb / Immovlan and the private ads, and it never counts a flat as missed
+import scraper
+_cfg = json.load(open(os.path.join(HERE, "config.example.json")))
+_calls = []
+
+
+class _P:                      # collect() reports progress to a global that only a real run sets up
+    detail = ""
+    adjust_total = tick = lambda *a, **k: None
+
+
+scraper.PROGRESS = _P()
+_orig = {n: getattr(sources, n) for n in ("immoweb_search", "immovlan_search", "ememain_search", "housinganywhere_search", "spotahome_search")}
+for _n in _orig:
+    setattr(sources, _n, lambda *a, _n=_n, **k: (_calls.append((_n, a, k)), [])[1])
+try:
+    scraper.collect(_cfg, set(), fast=True)
+finally:
+    for _n, _f in _orig.items():
+        setattr(sources, _n, _f)
+_names = {c[0] for c in _calls}
+assert _names == {"immoweb_search", "immovlan_search", "ememain_search"}, _names
+assert all(c[1][2] == 1 and not c[2].get("furnished") and "max_pages" not in c[2] for c in _calls if c[0] in ("immoweb_search", "immovlan_search")), "quick check must read one page"
+_state = {"catalog": {"iw-1": {"id": "iw-1", "source": "immoweb", "area": "1040", "missed": 0, "last_seen": date.today().isoformat()}}, "details": {}}
+scraper.update_catalog(_state, [], {("immoweb", "1040"): 50}, set(), date.today().isoformat(), misses=False)
+assert _state["catalog"]["iw-1"]["missed"] == 0
+scraper.update_catalog(_state, [], {("immoweb", "1040"): 50}, set(), date.today().isoformat())
+assert _state["catalog"]["iw-1"]["missed"] == 1
+assert scraper.read_priority({"score": 80, "furnished": True, "minutes": 25}) < scraper.read_priority({"score": 80, "furnished": None, "minutes": 40})
 print("core tests passed")

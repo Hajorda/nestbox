@@ -72,7 +72,7 @@ Everything below is optional. Each one has a step-by-step in the control panel.
 
 ## The honest bits
 
-- **It scrapes websites.** It follows each site's robots.txt, goes slowly, one request at a time per site, and reads each listing page once. Following robots.txt is good manners, but it is **not a legal guarantee**: a site's terms of use may still forbid scraping, and listings contain other people's data (agents' names and phone numbers). This is for **personal use**, at your own risk, and not legal advice. Don't hammer anyone.
+- **It scrapes websites.** It goes slowly (one request at a time per site, 2-4 seconds apart) and reads each listing page once, but it does **not** strictly follow every site's robots.txt: to find more affordable flats it uses the price filter and "newest first" sorting, which some sites' robots.txt asks crawlers to avoid. A site's terms of use may also forbid scraping, and listings contain other people's data (agents' names and phone numbers). This is for **personal use**, at your own risk, and not legal advice. Don't hammer anyone.
 - **Scrapers break.** Sites change their pages. When a site suddenly returns nothing, Nestbox shows a red bar saying so instead of quietly showing fewer flats. When that happens it needs a fix.
 - **It has only been tested in Brussels.** On the first screen it asks for your name, budget, move-in and move-out dates, workplace and areas; flats that are free too long after your move-in are flagged. The areas, the commute estimates (to EUROCONTROL in Haren) and the message texts are Brussels-specific, so other cities would need work.
 

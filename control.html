@@ -87,7 +87,7 @@ pre{background:var(--logbg);color:var(--logfg);border-radius:8px;padding:10px;ma
 
 <section><h2>Automatic runs</h2>
  <div class="row"><label><input type="checkbox" id="sEnabled"> run automatically</label>
-  <label>every <select id="sEvery"></select></label>
+  <label>every <select id="sEvery"></select></label> <label title="A short check of only the newest page of each area, which reads and scores brand-new flats and notifies you about the strong ones. It never marks flats as taken.">quick check <select id="sFast"></select></label>
   <label>between <select id="sStart"></select> and <select id="sEnd"></select></label>
   <label><input type="checkbox" id="sNotify"> notify</label><label><input type="checkbox" id="sAi"> Gemini</label>
   <button id="sSave">Save schedule</button></div>
@@ -122,6 +122,7 @@ $('prof').innerHTML=Object.entries(PROF).map(([k,l])=>`<label>${l}<input id="p_$
 const opt=(a,sel,f)=>a.map(v=>`<option value="${v}" ${v===sel?'selected':''}>${f(v)}</option>`).join('');
 const EVERY=[120,180,240,360,480,720,1440],HOURS=[...Array(25).keys()];
 const fmtEvery=m=>m<1440?(m/60)+' h':'day';
+const FAST=[0,30,45,60,90,120,180],fmtFast=m=>m?(m<60?m+' min':(m/60)+' h'):'off';
 const FEE_NAMES={housinganywhere:'HousingAnywhere',spotahome:'Spotahome'};
 async function loadConfig(){const c=await api('/api/config');
  $('fees').innerHTML=Object.entries(c.fees||{}).map(([k,f])=>`<label>${FEE_NAMES[k]||k}: low %<input type="number" id="fee_${k}_lo" min="0" max="100" step="1" value="${Math.round(f.pct_low*100)}"></label><label>${FEE_NAMES[k]||k}: high %<input type="number" id="fee_${k}_hi" min="0" max="100" step="1" value="${Math.round(f.pct_high*100)}"></label><label>${FEE_NAMES[k]||k}: minimum €<input type="number" id="fee_${k}_min" min="0" step="25" value="${f.min}"></label>`).join('');
@@ -132,7 +133,7 @@ async function loadConfig(){const c=await api('/api/config');
  $('keyNote').textContent=c.gemini_key_present?'':'(no key in .env: skipped)';if(!c.gemini_key_present)$('oAi').checked=false}
 async function loadSchedule(){const s=await api('/api/schedule');
  $('sEnabled').checked=s.enabled;$('sEvery').innerHTML=opt(EVERY,s.every_minutes,fmtEvery).replace(/^/,'');
- $('sStart').innerHTML=opt(HOURS.slice(0,24),s.start_hour,h=>String(h).padStart(2,'0')+':00');$('sEnd').innerHTML=opt(HOURS.slice(1),s.end_hour,h=>String(h).padStart(2,'0')+':00');
+ $('sFast').innerHTML=opt(FAST,s.fast_every_minutes,fmtFast);$('sStart').innerHTML=opt(HOURS.slice(0,24),s.start_hour,h=>String(h).padStart(2,'0')+':00');$('sEnd').innerHTML=opt(HOURS.slice(1),s.end_hour,h=>String(h).padStart(2,'0')+':00');
  $('sNotify').checked=s.notify;$('sAi').checked=s.ai;
  $('sInfo').textContent=s.enabled&&s.next_run_ts?'Next automatic run around '+new Date(s.next_run_ts*1000).toLocaleString([], {weekday:'short',hour:'2-digit',minute:'2-digit'})+' (if inside the hours above)':'Automatic runs are off.'}
 $('cSave').onclick=async()=>{try{const b={eurocontrol_shuttle:$('cShuttle').checked,midterm_enabled:$('cMid').checked,gemini_model:$('cModel').value,enabled_areas:[...document.querySelectorAll('#areas input:checked')].map(i=>i.value)};
@@ -140,7 +141,7 @@ $('cSave').onclick=async()=>{try{const b={eurocontrol_shuttle:$('cShuttle').chec
  b.fees={};for(const k in FEE_NAMES){if($('fee_'+k+'_lo'))b.fees[k]={pct_low:$('fee_'+k+'_lo').value/100,pct_high:$('fee_'+k+'_hi').value/100,min:+$('fee_'+k+'_min').value}}
  await api('/api/config',b);toast('Settings saved')}catch(e){fail(e)}};
 $('pSave').onclick=async()=>{try{const p={};for(const k in PROF)p[k]=$('p_'+k).value;await api('/api/config',{profile:p});toast('Details saved')}catch(e){fail(e)}};
-$('sSave').onclick=async()=>{try{await api('/api/schedule',{enabled:$('sEnabled').checked,every_minutes:+$('sEvery').value,start_hour:+$('sStart').value,end_hour:+$('sEnd').value,notify:$('sNotify').checked,ai:$('sAi').checked});await loadSchedule();toast('Schedule saved')}catch(e){fail(e)}};
+$('sSave').onclick=async()=>{try{await api('/api/schedule',{enabled:$('sEnabled').checked,every_minutes:+$('sEvery').value,fast_every_minutes:+$('sFast').value,start_hour:+$('sStart').value,end_hour:+$('sEnd').value,notify:$('sNotify').checked,ai:$('sAi').checked});await loadSchedule();toast('Schedule saved')}catch(e){fail(e)}};
 $('go').onclick=async()=>{const o={notify:$('oNotify').checked,no_ai:!$('oAi').checked,offline:$('oOffline').checked,read_only:$('oReadOnly').checked};
  if($('oDetails').value!=='')o.details=parseInt($('oDetails').value,10);if($('oMax').value!=='')o.max=parseInt($('oMax').value,10);
  try{await api('/api/run',o);toast('Started');poll()}catch(e){fail(e)}};

@@ -19,6 +19,8 @@
   "pages_per_area": 2,
   "furnished_pages_per_area": 1,
   "detail_pages_per_run": 100,
+  "backlog_pages_per_run": 250,
+  "fast_reads_per_run": 30,
   "areas": {
     "1130": {
       "immoweb": "haren",
@@ -143,6 +145,60 @@
       "centre": [
         50.836,
         4.389
+      ],
+      "lang": "fr"
+    },
+    "1150": {
+      "immoweb": "woluwe-saint-pierre",
+      "immovlan": "1150-woluwe-saint-pierre",
+      "centre": [
+        50.8343,
+        4.4333
+      ],
+      "lang": "fr"
+    },
+    "1950": {
+      "immoweb": "kraainem",
+      "immovlan": "1950-kraainem",
+      "centre": [
+        50.8575,
+        4.464
+      ],
+      "lang": "nl"
+    },
+    "1970": {
+      "immoweb": "wezembeek-oppem",
+      "immovlan": "1970-wezembeek-oppem",
+      "centre": [
+        50.8446,
+        4.49
+      ],
+      "lang": "nl"
+    },
+    "1160": {
+      "immoweb": "auderghem",
+      "immovlan": "1160-auderghem",
+      "centre": [
+        50.8157,
+        4.4267
+      ],
+      "lang": "fr"
+    },
+    "1050": {
+      "immoweb": "ixelles",
+      "immovlan": "1050-ixelles",
+      "centre": [
+        50.8268,
+        4.3714
+      ],
+      "lang": "fr"
+    },
+    "1090": {
+      "immoweb": "jette",
+      "immovlan": "1090-jette",
+      "centre": [
+        50.8792,
+        4.3237
       ],
       "lang": "fr"
     }
