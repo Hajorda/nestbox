@@ -147,7 +147,7 @@ def immovlan_search(postal, town, pages, max_pages=None):
         t = re.search(r'"numberOfItems":(\d+)', s)
         if page == 1 and max_pages and t:
             limit = min(max_pages, max(pages, -(-int(t.group(1)) // 20)))                      # about 20 listings per page
-        found = 0
+        found, seen = 0, set()
         for blob in re.findall(r'<script type="application/ld(?:\+|&#x2B;)json">(.*?)</script>', s, re.S):
             try:
                 data = json.loads(blob)
@@ -155,12 +155,17 @@ def immovlan_search(postal, town, pages, max_pages=None):
                 continue
             if not isinstance(data, dict):
                 continue
-            for el in data.get("itemListElement") or (data.get("mainEntity") or {}).get("itemListElement") or []:
+            if data.get("@type") == "RealEstateListing":                                         # newer pages: one block per listing
+                els = [{"url": data.get("url"), "item": {"name": data.get("name"), "offers": data.get("offers")}}]
+            else:                                                                                # older pages: one list of listings
+                els = data.get("itemListElement") or (data.get("mainEntity") or {}).get("itemListElement") or []
+            for el in els:
                 it, u = el.get("item") or {}, el.get("url")
                 offer = it.get("offers") or {}
                 m = re.search(r"/detail/([^/]+)/for-rent/(\d{4})/([^/]+)/([^/?#]+)", u or "")
-                if not m or not offer.get("price"):
+                if not m or not offer.get("price") or m.group(4) in seen:
                     continue
+                seen.add(m.group(4))
                 found += 1
                 out.append({
                     "id": f"iv-{m.group(4)}", "source": "immovlan", "url": u,

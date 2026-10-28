@@ -91,4 +91,19 @@ real = json.load(open(os.path.join(HERE, "config.json")))["profile"]
 for secret in (real.get("phone"), real.get("email")):
     assert not secret or secret not in page, "personal data found in the demo page"
 shutil.rmtree(os.path.join(HERE, "demo_site"), ignore_errors=True)
+
+# Immovlan search page: both layouts (one list block, or one block per listing) must be read
+import sources
+_u = "https://immovlan.be/en/detail/apartment/for-rent/1040/etterbeek/vbe1"
+_one = {"@type": "RealEstateListing", "url": _u, "name": "Apartment for rent", "offers": {"price": 900}}
+_old = {"itemListElement": [{"url": _u, "item": {"name": "Apartment", "offers": {"price": 900}}}]}
+for blobs in ([_one], [_old]):
+    page = "".join('<script type="application/ld&#x2B;json">' + json.dumps(b) + "</script>" for b in blobs)
+    _fetch, _pause = sources.fetch, sources.pause
+    sources.fetch, sources.pause = lambda url, tries=2, _p=page: _p, lambda: None
+    try:
+        got = sources.immovlan_search("1040", "1040-etterbeek", 1)
+    finally:
+        sources.fetch, sources.pause = _fetch, _pause
+    assert [g["id"] for g in got] == ["iv-vbe1"] and got[0]["rent"] == 900, got
 print("core tests passed")
