@@ -55,12 +55,14 @@ def _attr_json(page, name):
 
 
 # ---------------------------------------------------------------- Immoweb
-def immoweb_search(postal, slug, pages, furnished=False, max_pages=None):
+def immoweb_search(postal, slug, pages, furnished=False, max_pages=None, max_price=None):
     """Reads `pages` result pages; if the area has more listings than that (the site's order is not newest-first), reads on up to `max_pages`."""
     out, page, limit = [], 0, pages
     while page < limit:
         page += 1
         q = [f"page={page}"] if page > 1 else []
+        if max_price:                                                   # only flats you can afford, newest first: the 120-flat cap no longer hides cheap ones
+            q += [f"maxPrice={int(max_price)}", "orderBy=newest"]
         if furnished:
             q.append("isFurnished=true")
         url = f"https://www.immoweb.be/en/search/apartment/for-rent/{slug}/{postal}" + ("?" + "&".join(q) if q else "")
@@ -136,11 +138,11 @@ def immoweb_details(item, page=None):
 
 
 # ---------------------------------------------------------------- Immovlan
-def immovlan_search(postal, town, pages, max_pages=None):
+def immovlan_search(postal, town, pages, max_pages=None, max_price=None):
     out, page, limit = [], 0, pages
     while page < limit:
         page += 1
-        url = f"https://immovlan.be/en/real-estate?transactiontypes=for-rent&propertytypes=apartment&towns={town}" + (f"&page={page}" if page > 1 else "")
+        url = f"https://immovlan.be/en/real-estate?transactiontypes=for-rent&propertytypes=apartment&towns={town}" + (f"&maxprice={int(max_price)}" if max_price else "") + (f"&page={page}" if page > 1 else "")
         s = fetch(url)
         if not s:
             break

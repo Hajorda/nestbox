@@ -97,10 +97,10 @@ def collect(cfg, blocked):
     for postal, a in cfg["areas"].items():
         if postal not in enabled:
             continue
-        add("immoweb", postal, f"immoweb {postal} {a['immoweb']}", sources.immoweb_search, postal, a["immoweb"], cfg["pages_per_area"], max_pages=cfg.get("max_pages_per_area", 4), planned=cfg["pages_per_area"])
+        add("immoweb", postal, f"immoweb {postal} {a['immoweb']}", sources.immoweb_search, postal, a["immoweb"], cfg["pages_per_area"], max_pages=cfg.get("max_pages_per_area", 6), max_price=cfg["budget"], planned=cfg["pages_per_area"])
         if cfg["furnished_pages_per_area"]:
-            add("immoweb", postal, f"immoweb {postal} furnished", sources.immoweb_search, postal, a["immoweb"], cfg["furnished_pages_per_area"], furnished=True, planned=cfg["furnished_pages_per_area"])
-        add("immovlan", postal, f"immovlan {postal} {a['immovlan']}", sources.immovlan_search, postal, a["immovlan"], cfg["pages_per_area"], max_pages=cfg.get("max_pages_per_area", 4), planned=cfg["pages_per_area"])
+            add("immoweb", postal, f"immoweb {postal} furnished", sources.immoweb_search, postal, a["immoweb"], cfg["furnished_pages_per_area"], furnished=True, max_price=cfg["budget"], planned=cfg["furnished_pages_per_area"])
+        add("immovlan", postal, f"immovlan {postal} {a['immovlan']}", sources.immovlan_search, postal, a["immovlan"], cfg["pages_per_area"], max_pages=round(cfg.get("max_pages_per_area", 6) * 1.5), max_price=cfg["budget"], planned=cfg["pages_per_area"])
     if cfg.get("midterm_enabled", True):               # platforms made for stays of a few months
         for place in cfg.get("housinganywhere_places", []):
             add("housinganywhere", place, f"housinganywhere {place}", sources.housinganywhere_search, place, scoring.EUROCONTROL, 12, scoring.km)

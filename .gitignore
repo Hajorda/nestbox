@@ -12,7 +12,9 @@ cloud_status.json
 schedule.json
 listings.html
 listings.csv
-data/
+data/*
+!data/tram62.json
+!data/transit.json
 logs/
 *.log
 __pycache__/

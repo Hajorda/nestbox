@@ -1,0 +1,117 @@
+{
+ "source": "OpenStreetMap contributors (ODbL), STIB tram 62 route relations, fetched 2026-10-17",
+ "stops": {
+  "Heysel - Heizel": [
+   50.89646,
+   4.33815
+  ],
+  "Guillaume De Greef": [
+   50.88224,
+   4.33544
+  ],
+  "Bockstael": [
+   50.87756,
+   4.3478
+  ],
+  "Foyer Jettois - Jetse Haard": [
+   50.87899,
+   4.33842
+  ],
+  "Marie-Christine - Maria-Christina": [
+   50.87375,
+   4.35945
+  ],
+  "Masui": [
+   50.8701,
+   4.36192
+  ],
+  "Ernest Salu": [
+   50.88422,
+   4.33781
+  ],
+  "Stuyvenbergh": [
+   50.8865,
+   4.34266
+  ],
+  "Saint-Lambert - Sint-Lambertus": [
+   50.89085,
+   4.34447
+  ],
+  "Evere Shopping": [
+   50.86673,
+   4.40249
+  ],
+  "Pentathlon": [
+   50.86047,
+   4.40153
+  ],
+  "Meiser": [
+   50.85522,
+   4.39707
+  ],
+  "Bienfaiteurs - Weldoeners": [
+   50.85827,
+   4.38408
+  ],
+  "Cimetière de Jette - Kerkhof van Jette": [
+   50.88008,
+   4.3349
+  ],
+  "Lefrancq": [
+   50.86144,
+   4.36842
+  ],
+  "Princesse Clémentine - Prinses Clementina": [
+   50.87701,
+   4.35457
+  ],
+  "Moorslede": [
+   50.87751,
+   4.35031
+  ],
+  "Jacobs Fontaine": [
+   50.8789,
+   4.34245
+  ],
+  "Coteaux - Wijnheuvelen": [
+   50.85984,
+   4.37584
+  ],
+  "Robiano": [
+   50.8608,
+   4.37133
+  ],
+  "Eurocontrol": [
+   50.8795,
+   4.43393
+  ],
+  "Bourget": [
+   50.87826,
+   4.43031
+  ],
+  "Fusée - Raket": [
+   50.87738,
+   4.41955
+  ],
+  "Da Vinci": [
+   50.8769,
+   4.41325
+  ],
+  "Lekaerts": [
+   50.87187,
+   4.40665
+  ],
+  "Léopold III - Leopold III": [
+   50.85703,
+   4.39743
+  ],
+  "Patrie - Vaderland": [
+   50.85625,
+   4.39125
+  ],
+  "Liedts": [
+   50.86497,
+   4.36559
+  ]
+ }
+}

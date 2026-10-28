@@ -181,7 +181,7 @@
       "note": "NOT CONFIRMED: Spotahome publishes no tenant fee formula; 20-30% is a third-party claim. Check the booking fee at checkout"
     }
   },
-  "max_pages_per_area": 4,
+  "max_pages_per_area": 6,
   "new_days": 7,
   "gemini_price": {
     "input_per_million": 0.3,

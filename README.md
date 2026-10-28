@@ -21,6 +21,7 @@ It was built by an intern who arrived in Brussels with a hostel bed, a budget an
 - ✉ **Writes the first message** in French, Dutch or English (you can edit the texts), with copy, WhatsApp and Gmail buttons.
 - 📬 **Watches your Gmail (read-only)** and shows landlords' replies on the right flat.
 - 📅 **Keeps your viewings** and exports them to your calendar.
+- 🗺 **Map with the direct lines to EUROCONTROL** (tram 62, bus 12, bus 21), and a filter for flats within a few hundred metres of a stop. Line data from OpenStreetMap; `python3 build_transit.py` refreshes it.
 - 🗂 **Pipeline board**: new → contacted → replied → viewing → applied → rejected. Drag cards around.
 - 🌅 **Morning summary** notification. And an "I found a flat" button that makes everything shut up.
 - 📱 Works on a phone. Optional shared copy so a friend can look too.

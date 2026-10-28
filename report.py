@@ -79,7 +79,12 @@ def write_html(items, messages, path, cfg):
         "emails": contacts(it.get("description"), it.get("phone"))[0], "phones2": contacts(it.get("description"), it.get("phone"))[1], "first_at": it.get("first_at") or "", "seen_at": it.get("seen_at") or "", "read_at": it.get("read_at") or "", "missed": it.get("missed", 0), "last_seen": it.get("last_seen") or "", "manual": bool(it.get("manual")), "rechecked": it.get("rechecked_at") or "", "similar": it.get("similar", 0), "postal": it.get("postal") or "", "locality": it.get("locality") or "", "ai": bool(it.get("ai")), "also": it.get("also", []), "msg": messages[it["id"]], "lang": messages[it["id"]]["_lang"],
     } for it in items]
     tram = [[n, p[0], p[1]] for n, p in (json.load(open(os.path.join(HERE, "data", "tram62.json"))).get("stops") or {}).items()]
-    page = TEMPLATE.replace("__TRAM__", json.dumps(tram, ensure_ascii=False)).replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/")) \
+    try:
+        with open(os.path.join(HERE, "data", "transit.json")) as f:
+            lines = json.load(f).get("lines") or []                      # tram and bus lines that stop at EUROCONTROL (build_transit.py)
+    except (OSError, ValueError):
+        lines = []
+    page = TEMPLATE.replace("__LINES__", json.dumps(lines, separators=(",", ":"))).replace("__TRAM__", json.dumps(tram, ensure_ascii=False)).replace("__DATA__", json.dumps(data, ensure_ascii=False).replace("</", "<\\/")) \
         .replace("__NEWDAYS__", str(cfg.get("new_days", 3))).replace("__STAMP__", datetime.now().strftime("%Y-%m-%d %H:%M")).replace("__BUDGET__", str(cfg["budget"])) \
         .replace("__ICON__", icon_b64()).replace("__FOUND__", json.dumps(cfg.get("found_mode") or {"on": False})).replace("__SETUP__", "true" if firstrun.needs_setup(cfg) else "false").replace("__FOLLOW__", json.dumps({"first": cfg.get("followup_first_days", 2), "next": cfg.get("followup_next_days", 3), "max": 0 if (cfg.get("found_mode") or {}).get("on") else cfg.get("followup_max", 2)})).replace("__HEALTH__", json.dumps(source_health())).replace("__STATUSES__", json.dumps(STATUSES)) \
         .replace("__FUNTAB__", fun.TAB).replace("__FUNCSS__", fun.CSS).replace("__FUNHTML__", fun.HTML).replace("__FUNJS__", fun.JS).replace("__UXTAB__", ux.TAB).replace("__UXTABFIRST__", ux.TABFIRST).replace("__UXHTML__", ux.HTML).replace("__UXCSS__", ux.CSS).replace("__UXJS__", ux.JS)
@@ -270,10 +275,11 @@ __UXCSS__
  <div class="bar"><label>Colour pins by <select id="mColor"><option value="score">match score</option><option value="value">value points</option></select></label>
   <label><input type="checkbox" id="mOnlyMarked"> only ★ marked</label><label><input type="checkbox" id="mApprox" checked> include approximate positions</label>
   <span class="sub">Shows the flats that match your filters on the Listings tab.</span></div>
+ <div class="bar" id="mLinesBar"><b>Direct to EUROCONTROL:</b> <span id="mLineChips"></span> <label><input type="checkbox" id="mNear"> only flats within <select id="mNearD"><option value="300">300 m</option><option value="500" selected>500 m</option><option value="800">800 m</option></select> of a stop of the lines I tick</label></div>
  <div id="map" style="height:68vh;min-height:380px;border:1px solid var(--line);border-radius:10px"></div></div>__FUNHTML____UXHTML__<div id="toast"></div>
 <script>
 if(window.FF_CLOUD)document.body.classList.add('cloud');         // the shared copy: no scraping, settings or adding links here
-const FOUND=__FOUND__,SETUP_NEEDED=__SETUP__,FUC=__FOLLOW__,HEALTH=__HEALTH__,D=__DATA__,ST=__STATUSES__,B=__BUDGET__,NEWDAYS=__NEWDAYS__,TRAM=__TRAM__;document.getElementById('meta').textContent=D.length+" listings · budget €"+B+" incl. charges · commute = estimate door-to-desk · updated __STAMP__";
+const FOUND=__FOUND__,SETUP_NEEDED=__SETUP__,FUC=__FOLLOW__,HEALTH=__HEALTH__,D=__DATA__,ST=__STATUSES__,B=__BUDGET__,NEWDAYS=__NEWDAYS__,TRAM=__TRAM__,LINES=__LINES__;document.getElementById('meta').textContent=D.length+" listings · budget €"+B+" incl. charges · commute = estimate door-to-desk · updated __STAMP__";
 let S={},server=false;const q=id=>document.getElementById(id);
 const toast=m=>{const t=q('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800)};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -400,7 +406,7 @@ cards:'Left number: match score (higher = fits you better). Under it: value poin
 fu:'Flats you contacted 2 or more days ago that have not answered. Press "copy follow-up", paste it where you wrote the first time, and the reminder resets (a second reminder comes 3 days later, then it stops).',
 contact:'The 10 best good flats you have not contacted yet, fresh ads first (landlords answer the first replies), then text-checked ones, then by score. Press "copy message", paste it into the listing\'s contact form, and the flat moves to "contacted".',
 how:'Explains the two numbers on each card: the match score and the value points, and what counts for or against a flat. Close it with the arrow and it stays closed.',
-map:'Every flat that matches your filters on the Listings tab, as a pin. Colour = match score or value points (your choice): green best, blue very good, orange okay, red weak. Gold ring = marked ★. Pale dashed pins only have an approximate position (the area centre) because the listing gave no exact location. Black ring = EUROCONTROL, grey dots = tram 62 stops. Click a pin for the details and to mark it.',
+map:'Every flat that matches your filters on the Listings tab, as a pin. Colour = match score or value points (your choice): green best, blue very good, orange okay, red weak. Gold ring = marked ★. Pale dashed pins only have an approximate position (the area centre) because the listing gave no exact location. Black ring = EUROCONTROL. The coloured lines are the tram and bus lines that go there directly (tick or untick each one). Tick \"only flats within ... of a stop\" to keep just the flats on those lines. Click a pin for the details and to mark it.',
 stats:'Numbers about all listings and your progress. Close it with the arrow and it stays closed.',
 t_found:'Every listing stored from all websites, including ones your filters hide.',t_live:'Listings still seen in recent searches (not "possibly taken").',
 t_good:'In budget and none of the deal-breakers: no registration, one person only, students only, long lease only, shared, wrong map location, too far, scam signs.',
@@ -477,20 +483,31 @@ function renderStats(){const live=D.filter(x=>!x.gone),good=live.filter(x=>x.goo
  <div class="lists">${tbl('By source (good / found)',srcRows)}${tbl('By area, top 8 (good / found)',areaRows)}</div>`}
 const viewFromHash=()=>location.hash==='#marked'?'marked':location.hash==='#map'?'map':location.hash==='#today'?'today':location.hash==='#visits'?'visits':location.hash==='#next'?'next':location.hash==='#pipeline'?'pipeline':'all';
 let view=viewFromHash();
-let MAP=null,LAYER=null,mapFitted=false;
+let MAP=null,LAYER=null,LINELAYER=null,mapFitted=false;
+const LINEON=(()=>{try{return JSON.parse(localStorage.getItem('nb_lines')||'null')}catch(e){return null}})()||{};
+const lineOn=l=>LINEON[l.mode+l.ref]!==false;
+const hav=(a,b,c,d)=>{const r=Math.PI/180,x=Math.sin((c-a)*r/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2;return 12742000*Math.asin(Math.sqrt(x))};
+const lineName=l=>(l.mode==='tram'?'tram ':'bus ')+l.ref;
+function nearLines(x){if(x._nl)return x._nl;x._nl=LINES.map(l=>{let best=1e9;l.stops.forEach(s=>{const d=hav(x.lat,x.lon,s[1],s[2]);if(d<best)best=d});return{l,d:Math.round(best)}}).filter(o=>o.d<1500).sort((a,b)=>a.d-b.d);return x._nl}
 const EURO=[50.88347,4.43077];
 const pinColor=(x,mode)=>mode==='value'?(x.value>=53?'#2ea043':x.value>=47?'#2f6fed':x.value<40?'#d1242f':'#e08a00'):(x.score>=100?'#2ea043':x.score>=80?'#2f6fed':x.score<60?'#d1242f':'#e08a00');
 function popupHtml(x){const sm=(S[x.id]||{}).marked,keep=['stay_ok','furnished','laundry_machine','shared_laundry','deposit_high','couple_extra','late','too_late'];
- return `<div style="min-width:210px;font:13px/1.45 -apple-system,system-ui,sans-serif"><b><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></b><br>${esc(x.addr)}<br><b>€${x.total}</b>${x.effective>x.total+19?' · real ≈ €'+x.effective:''} · ${x.beds===0?'studio':(x.beds??'?')+' bd'} · ${x.m2??'?'} m²<br>score ${x.score} · value ${x.value} · ~${x.minutes??'?'} min${x.approx?'<br><i>approximate position (area centre)</i>':''}<br>${x.flags.filter(f=>keep.includes(f)).map(f=>esc(label[f]||f.replace('_',' '))).join(' · ')}<div style="margin-top:6px"><button data-mark="${x.id}">${sm?'★ marked':'☆ mark'}</button></div></div>`}
+ return `<div style="min-width:210px;font:13px/1.45 -apple-system,system-ui,sans-serif"><b><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></b><br>${esc(x.addr)}<br><b>€${x.total}</b>${x.effective>x.total+19?' · real ≈ €'+x.effective:''} · ${x.beds===0?'studio':(x.beds??'?')+' bd'} · ${x.m2??'?'} m²<br>score ${x.score} · value ${x.value} · ~${x.minutes??'?'} min${LINES.length&&x.lat!=null?'<br>🚋 '+(nearLines(x).filter(o=>o.d<=800).slice(0,4).map(o=>esc(lineName(o.l))+' ('+o.d+' m)').join(' · ')||'no direct line within 800 m'):''}${x.approx?'<br><i>approximate position (area centre)</i>':''}<br>${x.flags.filter(f=>keep.includes(f)).map(f=>esc(label[f]||f.replace('_',' '))).join(' · ')}<div style="margin-top:6px"><button data-mark="${x.id}">${sm?'★ marked':'☆ mark'}</button></div></div>`}
 function renderMap(){if(view!=='map')return;const box=q('map');
  if(typeof L==='undefined'){box.innerHTML='<div class="sub" style="padding:18px">The map library could not be loaded. The map needs an internet connection (it loads Leaflet and OpenStreetMap).</div>';return}
  if(!MAP){MAP=L.map('map').setView(EURO,12);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(MAP);
   L.circleMarker(EURO,{radius:10,color:'#000',weight:3,fillColor:'#fff',fillOpacity:1}).addTo(MAP).bindTooltip('EUROCONTROL',{permanent:true,direction:'top'});
-  TRAM.forEach(([n,la,lo])=>L.circleMarker([la,lo],{radius:3,color:'#555',weight:1,fillColor:'#999',fillOpacity:.9}).addTo(MAP).bindTooltip('tram 62: '+n));
-  const lg=L.control({position:'bottomright'});lg.onAdd=()=>{const d=L.DomUtil.create('div','legend');d.innerHTML='<i style="background:#2ea043"></i>best <i style="background:#2f6fed"></i>very good <i style="background:#e08a00"></i>okay <i style="background:#d1242f"></i>weak<br><span style="color:#a37800">◯ gold ring = marked ★</span><br>pale = approximate position<br>grey dots = tram 62';return d};lg.addTo(MAP)}
+  if(!LINES.length)TRAM.forEach(([n,la,lo])=>L.circleMarker([la,lo],{radius:3,color:'#555',weight:1,fillColor:'#999',fillOpacity:.9}).addTo(MAP).bindTooltip('tram 62: '+n));
+  const lg=L.control({position:'bottomright'});lg.onAdd=()=>{const d=L.DomUtil.create('div','legend');d.innerHTML='<i style="background:#2ea043"></i>best <i style="background:#2f6fed"></i>very good <i style="background:#e08a00"></i>okay <i style="background:#d1242f"></i>weak<br><span style="color:#a37800">◯ gold ring = marked ★</span><br>pale = approximate position<br>coloured lines = direct to EUROCONTROL';return d};lg.addTo(MAP)}
+ if(LINELAYER)LINELAYER.remove();LINELAYER=L.layerGroup().addTo(MAP);
+ [...LINES].filter(lineOn).sort((a,b)=>(a.mode==='tram')-(b.mode==='tram')).forEach(l=>{l.shapes.forEach(sh=>L.polyline(sh,{color:l.color,weight:l.mode==='tram'?5:3,opacity:.75}).addTo(LINELAYER).bindTooltip(lineName(l)+(l.name?' · '+l.name:''),{sticky:true}));
+  l.stops.forEach(s=>L.circleMarker([s[1],s[2]],{radius:3.5,color:l.color,weight:1.5,fillColor:'#fff',fillOpacity:1}).addTo(LINELAYER).bindTooltip(lineName(l)+' stop'))});
+ q('mLinesBar').style.display=LINES.length?'':'none';
+ q('mLineChips').innerHTML=LINES.map(l=>`<label class="chip" style="border-left:6px solid ${l.color};padding-left:5px;margin-right:8px"><input type="checkbox" data-line="${esc(l.mode+l.ref)}" ${lineOn(l)?'checked':''}> ${esc(lineName(l))}</label>`).join('');
  if(LAYER)LAYER.remove();LAYER=L.layerGroup().addTo(MAP);
  const mode=q('mColor').value;let list=D.filter(matches).filter(x=>x.lat!=null);const n0=list.length;
  if(q('mOnlyMarked').checked)list=list.filter(x=>(S[x.id]||{}).marked);if(!q('mApprox').checked)list=list.filter(x=>!x.approx);
+ if(q('mNear').checked&&LINES.length){const m=+q('mNearD').value;list=list.filter(x=>nearLines(x).some(o=>lineOn(o.l)&&o.d<=m))}
  list.sort((a,b)=>a.score-b.score);   // best flats are drawn last, on top
  const pts=[EURO];
  list.forEach(x=>{const mk=(S[x.id]||{}).marked,c=pinColor(x,mode);pts.push([x.lat,x.lon]);
@@ -551,7 +568,8 @@ q('addGo').onclick=async()=>{const url=q('addUrl').value.trim(),rent=q('addRent'
  catch(err){q('addMsg').textContent='⚠ '+err.message.replace('RENT_NEEDED: ','');if(/RENT_NEEDED/.test(err.message))q('addRent').focus();q('addGo').disabled=false}};
 q('msort').addEventListener('change',render);
 if('IntersectionObserver' in window){new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)&&view==='all'&&q('more').style.display!=='none'){LIMIT+=50;render()}},{rootMargin:'900px'}).observe(q('sentinel'))}
-window.addEventListener('hashchange',()=>{view=viewFromHash();mapFitted=false;render();window.scrollTo(0,0)});['mColor','mOnlyMarked','mApprox'].forEach(i=>q(i).addEventListener('change',renderMap));
+q('mLineChips').addEventListener('change',e=>{const k=e.target.dataset.line;if(!k)return;LINEON[k]=e.target.checked;try{localStorage.setItem('nb_lines',JSON.stringify(LINEON))}catch(_){}renderMap()});
+window.addEventListener('hashchange',()=>{view=viewFromHash();mapFitted=false;render();window.scrollTo(0,0)});['mColor','mOnlyMarked','mApprox','mNear','mNearD'].forEach(i=>q(i).addEventListener('change',renderMap));
 __FUNJS__
 __UXJS__
 renderHealth();initFilters();load();loadMail();setInterval(loadMail,120000);
