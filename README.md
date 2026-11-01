@@ -10,6 +10,8 @@ It was built by an intern who arrived in Brussels with a hostel bed, a budget an
 
 <p align="center"><img src="docs/screenshots/next.jpg" width="760" alt="The Next tab: replies to answer, viewings, follow-ups, new flats"></p>
 
+<p align="center"><a href="https://github.com/Hajorda/nestbox/blob/main/docs/nestbox-trailer.mp4"><img src="docs/trailer-preview.gif" width="240" alt="60-second trailer (click to watch with sound)"></a><br><sub>▶ Click for the 60-second trailer, with voice-over</sub></p>
+
 ## What it does
 
 - 🔎 **Looks at five sites for you** (Immoweb, Immovlan, 2ememain, HousingAnywhere, Spotahome), a few times a day, politely.
